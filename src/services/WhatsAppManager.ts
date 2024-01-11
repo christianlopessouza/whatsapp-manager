@@ -27,8 +27,32 @@ const WhatsAppManager = {
         }
     },
 
+    destroy(instanceId: string){
+        intances.delete(instanceId);    
+    },
 
-    async inicialize(instanceId: string, name: string) {
+    restart(instanceId: string){
+        WhatsAppManager.destroy(instanceId);
+        WhatsAppManager.create(instanceId);
+        WhatsAppManager.inicialize(instanceId);
+    },
+
+    logout(instanceId: string){
+        const instance = intances.get(instanceId);
+        if (instance !== undefined) {
+            const wppClient = instance?.wppClient; 
+
+            wppClient.destroy();
+
+            return { message: `Sessão ${instanceId} desconectada`, httpCode: 200 };
+        } else {
+            return { message: 'Instancia não inicializada', httpCode: 403, errorCode: 'ER002' };
+
+        }    
+    },
+
+
+    async inicialize(instanceId: string) {
         WhatsAppManager.create(instanceId);
 
         const instance = intances.get(instanceId);
@@ -49,7 +73,7 @@ const WhatsAppManager = {
 
             return { message: `Instancia ${instanceId} iniciada`, httpCode: 200 };
         } else {
-            return { message: 'Instancia não inicializada', httpCode: 403 };
+            return { message: 'Instancia não inicializada', httpCode: 403, errorCode: 'ER002' };
 
         }
     },
@@ -61,12 +85,12 @@ const WhatsAppManager = {
 
         if (instance !== undefined) {
             if (!!instance.qrCode === true) {
-                return { qrcode: instance.qrCode }
+                return { qrcode: instance.qrCode, httpCode: 200 }
             } else {
-                return { message: 'QrCode não gerado ainda', httpCode: 403 };
+                return { message: 'QrCode não gerado ainda', httpCode: 403, errorCode: 'ER001' };
             }
         } else {
-            return { message: 'Instancia não inicializada', httpCode: 403 };
+            return { message: 'Instancia não inicializada', httpCode: 403, errorCode: 'ER002' };
         }
     },
 
@@ -89,7 +113,7 @@ const WhatsAppManager = {
 
             }
         } else {
-            return { message: 'Instancia não inicializada', httpCode: 403 };
+            return { message: 'Instancia não inicializada', httpCode: 403, errorCode: 'ER002' };
         }
 
 
