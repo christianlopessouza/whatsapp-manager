@@ -11,5 +11,6 @@ routes.post('/instance/:name', authenticateToken, getInstanceMiddleware, Instanc
 routes.get('/instance/:name/start', authenticateToken, getInstanceMiddleware, InstanceController.start)
 routes.get('/instance/:name/qrcode', authenticateToken, getInstanceMiddleware, InstanceController.qrcode)
 routes.get('/instance/:name/connection', authenticateToken, getInstanceMiddleware, InstanceController.connectionStatus)
+routes.post('/instance/:name/send', authenticateToken, getInstanceMiddleware, InstanceController.sendMessage)
 
 export default routes;

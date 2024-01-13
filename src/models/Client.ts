@@ -18,6 +18,7 @@ export default class Client {
     @OneToMany(() => Instance, instance => instance.client, {
         cascade: ['update']
     })
+    
     @JoinColumn({
         name: 'client_id'
     })

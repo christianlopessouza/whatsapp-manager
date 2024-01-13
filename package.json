@@ -18,7 +18,8 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": " ts-node-dev --transpile-only --ignore-watch node_modules src/server.ts",
     "typeorm": "ts-node-dev ./node_modules/typeorm/cli.js",
-    "migration-run": "ts-node-dev ./node_modules/typeorm/cli.js migration:run -- -d ./data-source.ts"
+    "migration-run": "ts-node-dev ./node_modules/typeorm/cli.js migration:run -- -d ./src/data-source.ts",
+    "migration-create": "yarn typeorm migration:create ./src/database/migrations/create_instances"
   },
   "keywords": [],
   "author": "",

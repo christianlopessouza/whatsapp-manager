@@ -5,6 +5,9 @@
 
 import { Client } from 'whatsapp-web.js';
 import qrcode from 'qrcode';
+import dataSource from '../data-source';
+import Message from '../models/Message';
+
 
 const intances: Map<string, WhatsAppInstance> = new Map();
 
@@ -60,7 +63,7 @@ const WhatsAppManager = {
 
             return { response: { message: 'Instancia não inicializada' }, httpCode: 403, errorCode: 'ER002' };
         }
-        
+
     },
 
 
@@ -125,7 +128,6 @@ const WhatsAppManager = {
             } else {
                 const wppClient = instance?.wppClient;
 
-                console.log(wppClient)
                 let status: any = await wppClient.getState();
 
                 if (!!status === true) {
@@ -138,8 +140,55 @@ const WhatsAppManager = {
         } else {
             return { response: { message: 'Instancia não inicializada' }, httpCode: 403, errorCode: 'ER002' };
         }
+    },
+
+    async sendMessage(instanceId: string, message: string, number: string): Promise<{ response: any; httpCode: number; errorCode?: string; }> {
+        const instance = intances.get(instanceId);
+
+        if (instance !== undefined) {
+            const connectionResponse = await WhatsAppManager.connectionStatus(instanceId);
+
+            if (connectionResponse.response.status === 'CONNECTED') {
+                // envia
+                const wppClient = instance?.wppClient;
+                console.log(number, "follow number")
+                let numberId = (number.length >= 10 && number.length <= 13) ? await wppClient.getNumberId(number) : false;
+
+                if (!!numberId === true) {
+                    try {
+
+                        await wppClient.sendMessage(numberId._serialized, message);
+
+                        const messageRepository = dataSource.getRepository(Message);
+
+                        const newMessage = messageRepository.create({
+                            message: message,
+                            number: number,
+                            instance: { id: parseInt(instanceId) },
+                            insert_timestamp: new Date(),
+                        });
+
+                        const savedMessage = await messageRepository.save(newMessage);
 
 
+                        return { response: { message: 'Mensagem enviada', messageId: savedMessage.id, number: number }, httpCode: 200 };
+
+                    } catch (error) {
+
+                        return { response: { message: 'Mensagem não enviada', number: number }, httpCode: 403, errorCode: 'ER007' };
+                    }
+                } else {
+                    return { response: { message: 'Número Inválido', number: number }, httpCode: 403, errorCode: 'ER007' };
+                }
+
+            } else {
+                return { response: { message: 'Não foi possível estabelecer sessão' }, httpCode: 403, errorCode: 'ER006' };
+            }
+
+        } else {
+            return { response: { message: 'Instancia não inicializada' }, httpCode: 403, errorCode: 'ER002' };
+
+        }
     }
 }
 

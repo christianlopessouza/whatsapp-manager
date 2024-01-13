@@ -21,6 +21,7 @@ export default {
                 const newInstance = instanceRepository.create({
                     name: name,
                     client: { id: client.id },
+                    insert_timestamp: new Date()
                 });
 
                 await instanceRepository.save(newInstance);
@@ -31,6 +32,7 @@ export default {
             }
 
         } catch (error) {
+            console.log(error);
             return response.status(500).json({ message: 'Erro interno do servidor' });
 
         }
@@ -58,7 +60,7 @@ export default {
         }
     },
 
-    async restart(request: Request, response: Response){
+    async restart(request: Request, response: Response) {
         try {
             // aqui vai inicializar o sistema
             const instance = (request as any).instance;
@@ -79,7 +81,7 @@ export default {
         }
     },
 
-    async disconnect(request: Request, response: Response){
+    async disconnect(request: Request, response: Response) {
         try {
             // aqui vai inicializar o sistema
             const instance = (request as any).instance;
@@ -113,12 +115,27 @@ export default {
         }
     },
 
-    async connectionStatus(request: Request, response: Response){
+    async connectionStatus(request: Request, response: Response) {
         const instance = (request as any).instance;
 
         try {
             const connectionResponse = await WhatsAppManager.connectionStatus(instance.id);
             return response.status(connectionResponse.httpCode).json(connectionResponse.response);
+
+        } catch (error) {
+            console.log(error);
+            return response.status(500).json({ message: 'Erro interno do servidor' });
+        }
+    },
+
+    async sendMessage(request: Request, response: Response) {
+        const instance = (request as any).instance;
+        const {message, number} = request.body;
+
+        console.log(request.body)
+        try {
+            const sendResponse = await WhatsAppManager.sendMessage(instance.id,message,number);
+            return response.status(sendResponse.httpCode).json(sendResponse.response);
 
         } catch (error) {
             console.log(error);
