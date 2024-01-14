@@ -81,30 +81,48 @@ const AutoSender = {
         }
     },
 
+    async disable(instanceId: number): Promise<void> {
+        await AutoSender.create(instanceId);
+
+        const instance = autosenderIntances.get(instanceId);
+        instance!.active = false;
+
+        const autosenderRepository = dataSource.getRepository(Autosender);
+        await autosenderRepository.update({ id: instanceId }, { active: false });
+
+    },
+
 
     async enable(instanceId: number): Promise<{ response: any, httpCode: number }> {
         await AutoSender.create(instanceId);
 
         const instance = autosenderIntances.get(instanceId);
+        instance!.active = true;
+
+        const autosenderRepository = dataSource.getRepository(Autosender);
+        await autosenderRepository.update({ id: instanceId }, { active: true });
 
         return checkAutosendTimeMiddleware(instance!, () => {
             // logica de ennvio de msg
+
+            // verifica se tem mensagem em lote abertos
+
             return { response: { message: 'Entrei' }, httpCode: 200 };
         });
 
-        // const profileResponse = await AutoSender.create(instanceId);
-        // if (profileResponse.httpCode === 200) {
-        //     // faz as verificações para disparar mensagens
-        //     // - verificação do dia
-        //     // - verificação do horario
-        //     // - 
-        //     // Começa a disparar mensagems
-        // }
-
-
-
-
     },
+
+    turnOnMessages() {
+        const selectedInstance = await instanceRepository.findOne({
+            where: { 
+                name: name,
+                client: {
+                    id: client.id
+                }
+            },
+            select: ['id','name'],
+        });
+    }
 
 
 

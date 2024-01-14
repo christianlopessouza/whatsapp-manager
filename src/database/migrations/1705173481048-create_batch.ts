@@ -30,7 +30,7 @@ export class CreateBatch1705173481048 implements MigrationInterface {
                 {
                     name: 'BatchInstance',
                     columnNames: ['instance_id'],
-                    referencedTableName: 'instance',
+                    referencedTableName: 'instances',
                     referencedColumnNames: ['id'],
                     onUpdate: 'CASCADE',
                     onDelete: 'CASCADE'  //Cascade = se o cliente for deletado, as instancias tbm serao deletadas.  Cascade = se o cliente for atualizado, as instancias tbm serao atualizadas.  Restrict = nao
@@ -40,7 +40,7 @@ export class CreateBatch1705173481048 implements MigrationInterface {
     }
 
     public async down(queryRunner: QueryRunner): Promise<void> {
-        await queryRunner.dropTable('batch');
+        await queryRunner.dropTable('batches');
 
     }
 
