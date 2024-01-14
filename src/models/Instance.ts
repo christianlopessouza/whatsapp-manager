@@ -1,6 +1,7 @@
-import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn, OneToMany } from 'typeorm'
+import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn, OneToMany, OneToOne } from 'typeorm'
 import Client from './Client';
 import Message from './Message';
+import Autosender from './Autosender';
 
 @Entity('instances')
 export default class Instance {
@@ -19,14 +20,21 @@ export default class Instance {
 
 
     @OneToMany(() => Message, message => message.instance, {
-        cascade: ['update']
+        cascade: ['insert', 'update']
     })
-
     @JoinColumn({
         name: 'instance_id',
     })
-    message: Message[]
+    messages: Message[];
 
 
+
+    @OneToOne(() => Autosender, autosender => autosender.instance, {
+        cascade: ['insert', 'update'],
+    })
+    @JoinColumn({
+        name: 'instance_id',
+    })
+    autosender: Autosender;
 
 }

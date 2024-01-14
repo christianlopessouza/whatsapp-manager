@@ -141,5 +141,32 @@ export default {
             console.log(error);
             return response.status(500).json({ message: 'Erro interno do servidor' });
         }
+    },
+
+
+    addBatch(){
+
+    },
+
+    deleteBatch(){
+
+    },
+
+    resumeBatchSender(){
+
+    },
+
+    pauseBatchSender(){
+
+    },
+
+    listOpenBatches(){
+
+    },
+
+    listMessageBatch(){
+        
     }
+
+
 }

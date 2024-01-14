@@ -151,7 +151,17 @@ const WhatsAppManager = {
             if (connectionResponse.response.status === 'CONNECTED') {
                 // envia
                 const wppClient = instance?.wppClient;
-                console.log(number, "follow number")
+
+                const messageRepository = dataSource.getRepository(Message);
+
+                const dataParams = {
+                    message: message,
+                    number: number,
+                    instance: { id: parseInt(instanceId) },
+                    insert_timestamp: new Date(),
+                    sent: false,
+                }
+
                 let numberId = (number.length >= 10 && number.length <= 13) ? await wppClient.getNumberId(number) : false;
 
                 if (!!numberId === true) {
@@ -159,25 +169,22 @@ const WhatsAppManager = {
 
                         await wppClient.sendMessage(numberId._serialized, message);
 
-                        const messageRepository = dataSource.getRepository(Message);
-
-                        const newMessage = messageRepository.create({
-                            message: message,
-                            number: number,
-                            instance: { id: parseInt(instanceId) },
-                            insert_timestamp: new Date(),
-                        });
-
+                        dataParams.sent = true;
+                        const newMessage = messageRepository.create(dataParams);
                         const savedMessage = await messageRepository.save(newMessage);
-
 
                         return { response: { message: 'Mensagem enviada', messageId: savedMessage.id, number: number }, httpCode: 200 };
 
                     } catch (error) {
+                        const newMessage = messageRepository.create(dataParams);
+                        await messageRepository.save(newMessage);
 
                         return { response: { message: 'Mensagem não enviada', number: number }, httpCode: 403, errorCode: 'ER007' };
                     }
                 } else {
+                    const newMessage = messageRepository.create(dataParams);
+                    await messageRepository.save(newMessage);
+
                     return { response: { message: 'Número Inválido', number: number }, httpCode: 403, errorCode: 'ER007' };
                 }
 

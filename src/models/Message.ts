@@ -15,7 +15,7 @@ export default class Message {
     @Column({ type: 'datetime' })
     insert_timestamp: Date;
 
-    @ManyToOne(() => Instance, instance => instance.message)
+    @ManyToOne(() => Instance, instance => instance.messages)
     @JoinColumn({ name: 'instance_id' })
     instance: Instance;
 
