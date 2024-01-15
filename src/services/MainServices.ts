@@ -4,3 +4,8 @@ export function delay(seconds: number): Promise<void> {
     });
 }
 
+export interface DefaultResponse{
+    response: any,
+    httpCode: number,
+    errorCode?:string
+}

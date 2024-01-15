@@ -3,12 +3,12 @@
 
 
 
-import { Client, LocalAuth  } from 'whatsapp-web.js';
+import { Client, LocalAuth } from 'whatsapp-web.js';
 import qrcode from 'qrcode';
 import dataSource from '../data-source';
 import Message from '../models/Message';
-import InstanceController from '../controllers/InstanceController';
 import InstanceService from './InstanceService';
+import { DefaultResponse } from '../services/MainServices';
 
 
 const intances: Map<number, WhatsAppInstance> = new Map();
@@ -37,10 +37,9 @@ const WhatsAppManager = {
         }
     },
 
-    close(instanceId: number) {
+    async close(instanceId: number): Promise<DefaultResponse> {
+        return await WhatsAppManager.verifyInstance(instanceId, async (instance) => {
 
-        const instance = intances.get(instanceId);
-        if (instance !== undefined) {
             const wppClient = instance?.wppClient;
 
             wppClient.destroy();
@@ -48,30 +47,21 @@ const WhatsAppManager = {
             intances.delete(instanceId);
 
             return { response: { message: `Sessão ${instanceId} fechada` }, httpCode: 200 };
-        } else {
-            return { response: { message: 'Instancia não inicializada' }, httpCode: 403, errorCode: 'ER002' };
-
-        }
+        })
     },
 
-    async restart(instanceId: number): Promise<{ response: any; httpCode: number; errorCode?: string; }> {
+    async restart(instanceId: number): Promise<DefaultResponse> {
+        return await WhatsAppManager.verifyInstance(instanceId, async () => {
 
-        const instance = intances.get(instanceId);
-
-        if (instance !== undefined) {
             WhatsAppManager.close(instanceId);
             await WhatsAppManager.inicialize(instanceId);
 
             return { response: { message: `Sessão ${instanceId} reinicializada` }, httpCode: 200 };
-        } else {
-
-            return { response: { message: 'Instancia não inicializada' }, httpCode: 403, errorCode: 'ER002' };
-        }
-
+        })
     },
 
 
-    async inicialize(instanceId: number): Promise<{ response: any; httpCode: number; errorCode?: string; }> {
+    async inicialize(instanceId: number): Promise<DefaultResponse> {
         const createStatus = WhatsAppManager.create(instanceId);
 
         if (createStatus === true) {
@@ -109,24 +99,19 @@ const WhatsAppManager = {
         }
     },
 
-    qrcode(instanceId: number): { response: any; httpCode: number; errorCode?: string; } {
-        const instance = intances.get(instanceId);
-
-        if (instance !== undefined) {
+    async qrcode(instanceId: number): Promise<DefaultResponse> {
+        return await WhatsAppManager.verifyInstance(instanceId, async (instance) => {
             if (!!instance.qrCode === true) {
                 return { response: { qrcode: instance.qrCode }, httpCode: 200 }
             } else {
                 return { response: { message: 'QrCode não gerado ainda' }, httpCode: 403, errorCode: 'ER001' };
             }
-        } else {
-            return { response: { message: 'Instancia não inicializada' }, httpCode: 403, errorCode: 'ER002' };
-        }
+
+        })
     },
 
-    async connectionStatus(instanceId: number): Promise<{ response: any; httpCode: number; errorCode?: string; }> {
-        const instance = intances.get(instanceId);
-
-        if (instance !== undefined) {
+    async connectionStatus(instanceId: number): Promise<DefaultResponse> {
+        return await WhatsAppManager.verifyInstance(instanceId, async (instance) => {
             if (!!instance.qrCode === true) {
                 return { response: { status: 'QRCODE_SCANN' }, httpCode: 200 };
             } else {
@@ -141,16 +126,12 @@ const WhatsAppManager = {
                     return { response: { status: "OFF" }, httpCode: 200 };
                 }
             }
-
-        } else {
-            return { response: { message: 'Instancia não inicializada' }, httpCode: 403, errorCode: 'ER002' };
-        }
+        })
     },
 
-    async sendMessage(instanceId: number, message: string, number: string): Promise<{ response: any; httpCode: number; errorCode?: string; }> {
-        const instance = intances.get(instanceId);
+    async sendMessage(instanceId: number, message: string, number: string): Promise<DefaultResponse> {
+        return await WhatsAppManager.verifyInstance(instanceId, async (instance) => {
 
-        if (instance !== undefined) {
             const connectionResponse = await WhatsAppManager.connectionStatus(instanceId);
 
             if (connectionResponse.response.status === 'CONNECTED') {
@@ -177,7 +158,6 @@ const WhatsAppManager = {
                         dataParams.sent = true;
                         const newMessage = messageRepository.create(dataParams);
                         const savedMessage = await messageRepository.save(newMessage);
-                        console.log(savedMessage,"BIRINJONSON");
                         return { response: { message: 'Mensagem enviada', messageId: savedMessage.id, number: number }, httpCode: 200 };
 
                     } catch (error) {
@@ -197,9 +177,15 @@ const WhatsAppManager = {
                 return { response: { message: 'Não foi possível estabelecer sessão' }, httpCode: 403, errorCode: 'ER006' };
             }
 
+        })
+    },
+
+    async verifyInstance(instanceId: number, callback: (instance: WhatsAppInstance) => Promise<DefaultResponse>): Promise<DefaultResponse> {
+        const instance = intances.get(instanceId);
+        if (instance !== undefined) {
+            return callback(instance);
         } else {
             return { response: { message: 'Instancia não inicializada' }, httpCode: 403, errorCode: 'ER002' };
-
         }
     }
 }

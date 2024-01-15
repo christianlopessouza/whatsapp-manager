@@ -2,7 +2,7 @@
 import dataSource from '../data-source';
 import Autosender from '../models/Autosender';
 import MessageBatch from '../models/MessageBatch';
-import { AutosendInstance, defaultConfigAutosend, TimeRange } from '../autosender-preset';
+import { AutosendInstance, defaultConfigAutosend } from '../autosender-preset';
 import { checkAutosendTimeMiddleware } from '../middlewares/autosendMiddleware';
 import WhatsAppManager from './WhatsAppManager';
 import BatchHistory from '../models/BatchHistory';

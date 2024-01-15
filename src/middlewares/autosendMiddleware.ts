@@ -2,6 +2,7 @@
 import { AutosendInstance, TimeRange } from '../autosender-preset';
 import dataSource from '../data-source';
 import Autosender from '../models/Autosender';
+import { DefaultResponse } from '../services/MainServices';
 
 
 
@@ -19,7 +20,7 @@ function isCurrentDayValid(currentDay: number, validDays: number[]): boolean {
 }
 
 
-const checkAutosendTimeMiddleware = async (instance: AutosendInstance, instanceId: number, action: () => Promise<{ response: any, httpCode: number }>) => {
+const checkAutosendTimeMiddleware = async (instance: AutosendInstance, instanceId: number, action: () => Promise<DefaultResponse>) => {
     const now = new Date();
     const currentTime = parseInt(now.getHours().toString() + '' + now.getMinutes().toString());
     const currentDay = now.getDay();

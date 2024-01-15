@@ -3,7 +3,6 @@ import dataSource from '../data-source';
 import Instance from '../models/Instance';
 import WhatsAppManager from '../services/WhatsAppManager';
 import AutoSenderService from '../services/AutoSenderService';
-import Autosender from '../models/Autosender';
 
 
 
@@ -89,7 +88,7 @@ export default {
             const instance = (request as any).instance;
 
             if (!!instance === true) {
-                const inicializeResponse = WhatsAppManager.close(instance.id);
+                const inicializeResponse = await WhatsAppManager.close(instance.id);
 
                 return response.status(inicializeResponse.httpCode).json(inicializeResponse.response);
 
@@ -108,7 +107,7 @@ export default {
         const instance = (request as any).instance;
 
         try {
-            const qrCodeResponse = WhatsAppManager.qrcode(instance.id);
+            const qrCodeResponse = await WhatsAppManager.qrcode(instance.id);
             return response.status(qrCodeResponse.httpCode).json(qrCodeResponse.response);
 
         } catch (error) {
@@ -173,9 +172,11 @@ export default {
     async startAutosender(request: Request, response: Response) {
         const instance = (request as any).instance;
 
-        const startResponse = await AutoSenderService.start(instance.id);
+        const startResponse = await WhatsAppManager.verifyInstance(instance.id, async () => {
+            return await AutoSenderService.start(instance.id);
+        })
 
-        return response.status(startResponse.httpCode).json(startResponse.response);
+        response.status(startResponse.httpCode).json(startResponse.response);
 
     },
 
