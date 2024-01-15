@@ -1,14 +1,17 @@
 
 import { AutosendInstance, TimeRange } from '../autosender-preset';
+import dataSource from '../data-source';
+import Autosender from '../models/Autosender';
 
 
 
-function isWithinTimeRange(currentHour: number, timeRange: TimeRange): boolean {
+function isWithinTimeRange(currentTime: number, timeRange: TimeRange): boolean {
     const { start, end } = timeRange;
-    const startTime = new Date(`2000-01-01T${start}:00`);
-    const endTime = new Date(`2000-01-01T${end}:00`);
+    let startTime = parseInt(start.replace(/\D/g, ""));
+    let endTime = parseInt(end.replace(/\D/g, ""));
+    console.log(currentTime, startTime, endTime)
 
-    return currentHour >= startTime.getHours() && currentHour < endTime.getHours();
+    return currentTime >= startTime && currentTime < endTime;
 }
 
 function isCurrentDayValid(currentDay: number, validDays: number[]): boolean {
@@ -16,17 +19,30 @@ function isCurrentDayValid(currentDay: number, validDays: number[]): boolean {
 }
 
 
-const checkAutosendTimeMiddleware = (instance: AutosendInstance, action:()=> { response: any, httpCode: number }) => {
+const checkAutosendTimeMiddleware = async (instance: AutosendInstance, instanceId: number, action: () => Promise<{ response: any, httpCode: number }>) => {
     const now = new Date();
-    const currentHour = now.getHours();
+    const currentTime = parseInt(now.getHours().toString() + '' + now.getMinutes().toString());
     const currentDay = now.getDay();
 
-    const isTimeValid = isWithinTimeRange(currentHour, instance.time);
+    const isTimeValid = isWithinTimeRange(currentTime, instance.time);
     const isDayValid = isCurrentDayValid(currentDay, instance.days);
 
+    const autosenderRepository = dataSource.getRepository(Autosender);
+
     if (isTimeValid && isDayValid) {
+        if (instance.active !== true) {
+            instance!.active = true;
+            await autosenderRepository.update({ id: instanceId }, { active: true });
+        }
+
         return action();
     } else {
+        if (instance.active !== false) {
+            instance!.active = false;
+            await autosenderRepository.update({ id: instanceId }, { active: false });
+        }
+
+
         if (!!isTimeValid === false) {
             return { response: { message: 'Horário Inválido' }, httpCode: 403, errorCode: 'ER008' }
         } else if (!!isDayValid === false) {

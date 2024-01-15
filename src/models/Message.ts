@@ -1,5 +1,6 @@
-import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn } from 'typeorm'
+import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn, OneToMany } from 'typeorm'
 import Instance from './Instance';
+import BatchHistory from './BatchHistory';
 
 @Entity('messages')
 export default class Message {
@@ -18,6 +19,16 @@ export default class Message {
     @ManyToOne(() => Instance, instance => instance.messages)
     @JoinColumn({ name: 'instance_id' })
     instance: Instance;
+
+
+    // vinculo com tabela de historico 
+    @OneToMany(() => BatchHistory, batchHistory => batchHistory.message, {
+        cascade: ['insert', 'update'],
+    })
+    @JoinColumn({
+        name: 'message_id',
+    })
+    batchHistory: BatchHistory;
 
 
 }

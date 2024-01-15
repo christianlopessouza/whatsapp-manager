@@ -42,7 +42,7 @@ export class CreateAutosender1705177092787 implements MigrationInterface {
                 {
                     name: 'InstanceAutosender',
                     columnNames: ['instance_id'],
-                    referencedTableName: 'instance',
+                    referencedTableName: 'instances',
                     referencedColumnNames: ['id'],
                     onUpdate: 'CASCADE',
                     onDelete: 'CASCADE'  //Cascade = se o cliente for deletado, as instancias tbm serao deletadas.  Cascade = se o cliente for atualizado, as instancias tbm serao atualizadas.  Restrict = nao

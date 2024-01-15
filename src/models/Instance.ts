@@ -2,6 +2,7 @@ import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn, OneToMan
 import Client from './Client';
 import Message from './Message';
 import Autosender from './Autosender';
+import Batch from './Batch';
 
 @Entity('instances')
 export default class Instance {
@@ -36,5 +37,15 @@ export default class Instance {
         name: 'instance_id',
     })
     autosender: Autosender;
+
+
+
+    @OneToMany(() => Batch, batch => batch.instance, {
+        cascade: ['insert', 'update'],
+    })
+    @JoinColumn({
+        name: 'instance_id',
+    })
+    batches: Batch[];
 
 }

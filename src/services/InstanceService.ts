@@ -1,21 +1,13 @@
-// instance.ts
-import { PuppeteerManager } from './puppeteerManager';
+import AutoSenderService from './AutoSenderService'
 
-export class Instance {
-  private puppeteerManager: PuppeteerManager;
+const InstanceService = {
 
-  constructor() {
-    this.puppeteerManager = new PuppeteerManager();
+  initTrigger(instanceId: number) {
+
+    AutoSenderService.start(instanceId); // caso tenha o envio de mensagem automativo é iniciado
   }
 
-  async initialize() {
-    await this.puppeteerManager.initialize();
-  }
 
-  async performAction() {
-    // Lógica específica da instância usando Puppeteer
-    await this.puppeteerManager.sendEmail('exemplo@email.com', 'Assunto', 'Corpo do email');
-  }
-
-  // Outros métodos da instância
 }
+
+export default InstanceService;

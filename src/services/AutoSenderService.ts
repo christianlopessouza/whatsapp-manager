@@ -1,28 +1,18 @@
 
-import { Client } from 'whatsapp-web.js';
 import dataSource from '../data-source';
 import Autosender from '../models/Autosender';
+import MessageBatch from '../models/MessageBatch';
 import { AutosendInstance, defaultConfigAutosend, TimeRange } from '../autosender-preset';
 import { checkAutosendTimeMiddleware } from '../middlewares/autosendMiddleware';
-
-
-
-
-// const checkAndExecute = async (instanceId: number, action: () => void): Promise<{ response: any, httpCode: number, errorCode?: string }> => {
-//     const instance = autosenderIntances.get(instanceId);
-
-//     if (instance !== undefined) {
-
-//     }else{
-
-//     }
-// };
+import WhatsAppManager from './WhatsAppManager';
+import BatchHistory from '../models/BatchHistory';
+import { delay } from '../services/MainServices';
 
 
 
 const autosenderIntances: Map<number, AutosendInstance> = new Map();
 
-const AutoSender = {
+const AutoSenderService = {
     async create(instanceId: number): Promise<void> {
         const instance = autosenderIntances.get(instanceId);
 
@@ -82,7 +72,7 @@ const AutoSender = {
     },
 
     async disable(instanceId: number): Promise<void> {
-        await AutoSender.create(instanceId);
+        await AutoSenderService.create(instanceId);
 
         const instance = autosenderIntances.get(instanceId);
         instance!.active = false;
@@ -93,37 +83,96 @@ const AutoSender = {
     },
 
 
-    async enable(instanceId: number): Promise<{ response: any, httpCode: number }> {
-        await AutoSender.create(instanceId);
+    async start(instanceId: number): Promise<{ response: any, httpCode: number }> {
+        await AutoSenderService.create(instanceId);
 
-        const instance = autosenderIntances.get(instanceId);
-        instance!.active = true;
+        try {
+            return await AutoSenderService.turnOnSend(instanceId);
 
-        const autosenderRepository = dataSource.getRepository(Autosender);
-        await autosenderRepository.update({ id: instanceId }, { active: true });
-
-        return checkAutosendTimeMiddleware(instance!, () => {
-            // logica de ennvio de msg
-
-            // verifica se tem mensagem em lote abertos
-
-            return { response: { message: 'Entrei' }, httpCode: 200 };
-        });
+        } catch (error) {
+            return { response: { message: 'Erro interno do servidor' }, httpCode: 500 }
+        }
 
     },
 
-    turnOnMessages() {
-        const selectedInstance = await instanceRepository.findOne({
-            where: { 
-                name: name,
-                client: {
-                    id: client.id
+    async turnOnSend(instanceId: number): Promise<{ response: any; httpCode: number; }> {
+        const instance = autosenderIntances.get(instanceId);
+
+        return await checkAutosendTimeMiddleware(instance!, instanceId, async () => {
+
+            const messageBatchRepository = dataSource.getRepository(MessageBatch);
+
+            const pendingMessages = await messageBatchRepository.find({
+                where: {
+                    batch: {
+                        instance: {
+                            id: instanceId
+                        }
+                    }
+                },
+                relations: ['batch'],
+                select: ['id', 'message', 'number', 'batch.id' as keyof MessageBatch], // Correção aqui
+            });
+
+
+
+            if (pendingMessages.length > 0) {
+                AutoSenderService.sendBatchMessages(instanceId, pendingMessages);
+                return { response: { message: 'Serviço iniciado' }, httpCode: 200 };
+
+            } else {
+                return { response: { message: 'Todas mensagens enviadas' }, httpCode: 200 };
+
+            }
+        })
+
+    },
+
+    async sendBatchMessages(instanceId: number, batchMessages: MessageBatch[]): Promise<void> {
+        await AutoSenderService.create(instanceId);
+
+        const instance = autosenderIntances.get(instanceId);
+
+
+        for (const message of batchMessages) {
+            const timerVerifyer = await checkAutosendTimeMiddleware(instance!, instanceId, async () => {
+                try {
+                    const statusMessage = await WhatsAppManager.sendMessage(instanceId, message.message, message.number);
+
+                    const messageBatchRepository = dataSource.getRepository(MessageBatch);
+                    await messageBatchRepository.remove(message);
+
+                    const batchHistoryRepository = dataSource.getRepository(BatchHistory)
+
+                    const newMessageHistory = batchHistoryRepository.create({
+                        message: {
+                            id: statusMessage.response.messageId,
+                        },
+                        batch: {
+                            id: message.batch.id
+                        }
+                    });
+                    await batchHistoryRepository.save(newMessageHistory);
+
+                    const delayInSeconds = Math.floor(Math.random() * instance!.shootingTimer.max) + instance!.shootingTimer.min;
+                    await delay(delayInSeconds);
+
+                    return { response: { message: 'Mensagem enviada' }, httpCode: 200 }
+                } catch (error) {
+                    return { response: { message: 'Erro interno do seridos' }, httpCode: 500 }
                 }
-            },
-            select: ['id','name'],
-        });
-    }
+
+            })
+
+            if (timerVerifyer.httpCode !== 200) return;
+
+        }
+
+        AutoSenderService.turnOnSend(instanceId)
+    },
 
 
 
 }
+
+export default AutoSenderService;

@@ -3,13 +3,15 @@
 
 
 
-import { Client } from 'whatsapp-web.js';
+import { Client, LocalAuth  } from 'whatsapp-web.js';
 import qrcode from 'qrcode';
 import dataSource from '../data-source';
 import Message from '../models/Message';
+import InstanceController from '../controllers/InstanceController';
+import InstanceService from './InstanceService';
 
 
-const intances: Map<string, WhatsAppInstance> = new Map();
+const intances: Map<number, WhatsAppInstance> = new Map();
 
 interface WhatsAppInstance {
     wppClient: Client;
@@ -17,13 +19,15 @@ interface WhatsAppInstance {
 }
 
 const WhatsAppManager = {
-    create(instanceId: string) {
+    create(instanceId: number) {
         if (!intances.has(instanceId)) {
             const client = new Client({
                 puppeteer: {
                     headless: true,
                     args: ['--no-sandbox'],
-                }
+                },
+                authStrategy: new LocalAuth({ clientId: instanceId.toString() })
+
             });
 
             intances.set(instanceId, { wppClient: client });
@@ -33,7 +37,7 @@ const WhatsAppManager = {
         }
     },
 
-    close(instanceId: string) {
+    close(instanceId: number) {
 
         const instance = intances.get(instanceId);
         if (instance !== undefined) {
@@ -50,7 +54,7 @@ const WhatsAppManager = {
         }
     },
 
-    async restart(instanceId: string): Promise<{ response: any; httpCode: number; errorCode?: string; }> {
+    async restart(instanceId: number): Promise<{ response: any; httpCode: number; errorCode?: string; }> {
 
         const instance = intances.get(instanceId);
 
@@ -67,7 +71,7 @@ const WhatsAppManager = {
     },
 
 
-    async inicialize(instanceId: string): Promise<{ response: any; httpCode: number; errorCode?: string; }> {
+    async inicialize(instanceId: number): Promise<{ response: any; httpCode: number; errorCode?: string; }> {
         const createStatus = WhatsAppManager.create(instanceId);
 
         if (createStatus === true) {
@@ -90,8 +94,8 @@ const WhatsAppManager = {
             })
 
             wppClient.on('ready', async () => {
-                console.log("READY TO WORK");
                 instance!.qrCode = "";
+                InstanceService.initTrigger(instanceId);
 
 
                 // this.webhookHandler({ _id: this.profile_name, status: true, status_code: 4, method: "session_status" });
@@ -105,7 +109,7 @@ const WhatsAppManager = {
         }
     },
 
-    qrcode(instanceId: string): { response: any; httpCode: number; errorCode?: string; } {
+    qrcode(instanceId: number): { response: any; httpCode: number; errorCode?: string; } {
         const instance = intances.get(instanceId);
 
         if (instance !== undefined) {
@@ -119,7 +123,7 @@ const WhatsAppManager = {
         }
     },
 
-    async connectionStatus(instanceId: string): Promise<{ response: any; httpCode: number; errorCode?: string; }> {
+    async connectionStatus(instanceId: number): Promise<{ response: any; httpCode: number; errorCode?: string; }> {
         const instance = intances.get(instanceId);
 
         if (instance !== undefined) {
@@ -129,6 +133,7 @@ const WhatsAppManager = {
                 const wppClient = instance?.wppClient;
 
                 let status: any = await wppClient.getState();
+                console.log(status);
 
                 if (!!status === true) {
                     return { response: { status: status }, httpCode: 200 };
@@ -142,7 +147,7 @@ const WhatsAppManager = {
         }
     },
 
-    async sendMessage(instanceId: string, message: string, number: string): Promise<{ response: any; httpCode: number; errorCode?: string; }> {
+    async sendMessage(instanceId: number, message: string, number: string): Promise<{ response: any; httpCode: number; errorCode?: string; }> {
         const instance = intances.get(instanceId);
 
         if (instance !== undefined) {
@@ -154,10 +159,10 @@ const WhatsAppManager = {
 
                 const messageRepository = dataSource.getRepository(Message);
 
-                const dataParams = {
+                let dataParams = {
                     message: message,
                     number: number,
-                    instance: { id: parseInt(instanceId) },
+                    instance: { id: instanceId },
                     insert_timestamp: new Date(),
                     sent: false,
                 }
@@ -172,7 +177,7 @@ const WhatsAppManager = {
                         dataParams.sent = true;
                         const newMessage = messageRepository.create(dataParams);
                         const savedMessage = await messageRepository.save(newMessage);
-
+                        console.log(savedMessage,"BIRINJONSON");
                         return { response: { message: 'Mensagem enviada', messageId: savedMessage.id, number: number }, httpCode: 200 };
 
                     } catch (error) {

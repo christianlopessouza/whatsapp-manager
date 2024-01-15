@@ -14,19 +14,19 @@ export class CreateBatchesHistory1705174079050 implements MigrationInterface {
                     generationStrategy: 'increment'
                 },
                 {
-                    name: 'id_message',
+                    name: 'message_id',
                     type: 'integer'
                 },
                 {
-                    name: 'id_batch',
+                    name: 'batch_id',
                     type: 'integer'
                 }
             ],
             foreignKeys: [
                 {
                     name: 'BatchMessageHistory',
-                    columnNames: ['id_batch'],
-                    referencedTableName: 'batch',
+                    columnNames: ['batch_id'],
+                    referencedTableName: 'batches',
                     referencedColumnNames: ['id'],
                     onUpdate: 'CASCADE',
                     onDelete: 'CASCADE'  //Cascade = se o cliente for deletado, as instancias tbm serao deletadas.  Cascade = se o cliente for atualizado, as instancias tbm serao atualizadas.  Restrict = nao

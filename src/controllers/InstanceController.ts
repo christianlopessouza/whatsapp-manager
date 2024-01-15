@@ -2,6 +2,8 @@ import { Request, Response } from 'express';
 import dataSource from '../data-source';
 import Instance from '../models/Instance';
 import WhatsAppManager from '../services/WhatsAppManager';
+import AutoSenderService from '../services/AutoSenderService';
+import Autosender from '../models/Autosender';
 
 
 
@@ -130,11 +132,11 @@ export default {
 
     async sendMessage(request: Request, response: Response) {
         const instance = (request as any).instance;
-        const {message, number} = request.body;
+        const { message, number } = request.body;
 
         console.log(request.body)
         try {
-            const sendResponse = await WhatsAppManager.sendMessage(instance.id,message,number);
+            const sendResponse = await WhatsAppManager.sendMessage(instance.id, message, number);
             return response.status(sendResponse.httpCode).json(sendResponse.response);
 
         } catch (error) {
@@ -144,28 +146,41 @@ export default {
     },
 
 
-    addBatch(){
+    addBatch() {
 
     },
 
-    deleteBatch(){
+    deleteBatch() {
 
     },
 
-    resumeBatchSender(){
+    resumeBatchSender() {
 
     },
 
-    pauseBatchSender(){
+    pauseBatchSender() {
 
     },
 
-    listOpenBatches(){
+    listOpenBatches() {
 
     },
 
-    listMessageBatch(){
-        
+    listMessageBatch() {
+
+    },
+
+    async startAutosender(request: Request, response: Response) {
+        const instance = (request as any).instance;
+
+        const startResponse = await AutoSenderService.start(instance.id);
+
+        return response.status(startResponse.httpCode).json(startResponse.response);
+
+    },
+
+    pauseAutosender(request: Request, response: Response) {
+
     }
 
 

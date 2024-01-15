@@ -12,5 +12,7 @@ routes.get('/instance/:name/start', authenticateToken, getInstanceMiddleware, In
 routes.get('/instance/:name/qrcode', authenticateToken, getInstanceMiddleware, InstanceController.qrcode)
 routes.get('/instance/:name/connection', authenticateToken, getInstanceMiddleware, InstanceController.connectionStatus)
 routes.post('/instance/:name/send', authenticateToken, getInstanceMiddleware, InstanceController.sendMessage)
+routes.post('/instance/:name/startAutosender', authenticateToken, getInstanceMiddleware, InstanceController.startAutosender)
+routes.post('/instance/:name/pauseAutosender', authenticateToken, getInstanceMiddleware, InstanceController.pauseAutosender)
 
 export default routes;
