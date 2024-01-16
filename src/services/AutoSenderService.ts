@@ -6,6 +6,7 @@ import { AutosendInstance, defaultConfigAutosend } from '../autosender-preset';
 import { checkAutosendMiddleware } from '../middlewares/autosendMiddleware';
 import WhatsAppManager from './WhatsAppManager';
 import BatchHistory from '../models/BatchHistory';
+import Batch from '../models/Batch';
 import { delay } from '../services/MainServices';
 
 
@@ -114,8 +115,6 @@ const AutoSenderService = {
                 select: ['id', 'message', 'number', 'batch.id' as keyof MessageBatch], // Correção aqui
             });
 
-
-
             if (pendingMessages.length > 0) {
                 AutoSenderService.sendBatchMessages(instanceId, pendingMessages);
                 return { response: { message: 'Serviço iniciado' }, httpCode: 200 };
@@ -170,6 +169,42 @@ const AutoSenderService = {
 
         AutoSenderService.turnOnSend(instanceId)
     },
+
+    async addBatch(instaceId: number, messages: { number: string, message: string }[]) {
+        try {
+            const batchRepository = dataSource.getRepository(Batch)
+
+            const newBatch = batchRepository.create({
+                time: new Date(),
+                sent: false,
+                instance: {
+                    id: instaceId,
+                }
+            });
+
+            const { id: batchId } = await batchRepository.save(newBatch);
+
+            for (const message of messages) {
+                const messageBatchRepository = dataSource.getRepository(MessageBatch)
+
+                const newMessageBatch = messageBatchRepository.create({
+                    message: message.message,
+                    number: message.number,
+                    batch: {
+                        id: batchId
+                    }
+                });
+                await messageBatchRepository.save(newMessageBatch);
+            }
+
+            return { response: { message: 'Lote enviado' }, httpCode: 200 }
+            
+        } catch (error) {
+            return { response: { message: 'Erro interno do servidor' }, httpCode: 500 }
+        }
+
+
+    }
 
 
 

@@ -21,32 +21,22 @@ function isCurrentDayValid(currentDay: number, validDays: number[]): boolean {
 }
 
 
-const checkAutosendMiddleware = async (instance: AutosendInstance, instanceId: number, action: () => Promise<DefaultResponse>) => {
+const checkAutosendMiddleware = async (autosendInstance: AutosendInstance, instanceId: number, action: () => Promise<DefaultResponse>) => {
     const now = new Date();
     const currentTime = parseInt(now.getHours().toString() + '' + now.getMinutes().toString());
     const currentDay = now.getDay();
 
-    const isTimeValid = isWithinTimeRange(currentTime, instance.time);
-    const isDayValid = isCurrentDayValid(currentDay, instance.days);
-
-    const autosenderRepository = dataSource.getRepository(Autosender);
+    const isTimeValid = isWithinTimeRange(currentTime, autosendInstance.time);
+    const isDayValid = isCurrentDayValid(currentDay, autosendInstance.days);
 
     const wppInstanceConnection = await WhatsAppManager.connectionStatus(instanceId);
+    const wppSessionActive = wppInstanceConnection.response.status === 'CONNECTED';
 
-    const wppSessionActive = wppInstanceConnection.response.status === 200;
-
-
-
-    if (isTimeValid && isDayValid && instance.active && wppSessionActive) {
-        if (instance.active !== true) {
-            instance!.active = true;
-            await autosenderRepository.update({ id: instanceId }, { active: true });
-        }
-
+    if (isTimeValid && isDayValid && autosendInstance.active && wppSessionActive) {
         return action();
     } else {
 
-        if (!!instance.active === false) {
+        if (!!autosendInstance.active === false) {
             return { response: { message: 'Serviço Pausado' }, httpCode: 403, errorCode: 'ER010' }
         } else if (!!isTimeValid === false) {
             return { response: { message: 'Horário Inválido' }, httpCode: 403, errorCode: 'ER008' }

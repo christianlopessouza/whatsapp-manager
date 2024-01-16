@@ -3,6 +3,8 @@ import dataSource from '../data-source';
 import Instance from '../models/Instance';
 import WhatsAppManager from '../services/WhatsAppManager';
 import AutoSenderService from '../services/AutoSenderService';
+import { DefaultResponse } from '../services/MainServices';
+
 
 
 
@@ -145,7 +147,28 @@ export default {
     },
 
 
-    addBatch() {
+    async addBatch(request: Request, response: Response) {
+        try {
+            const { messages }: { messages: { number: string, message: string }[] } = request.body;
+            // aqui vai inicializar o sistema
+            const instance = (request as any).instance;
+            if (!!instance === true) {
+                if (messages.length > 0) {
+
+
+                    
+                } else {
+                    return response.status(403).json({ message: 'Nenhuma mensagem enviada' });
+                }
+            } else {
+                return response.status(403).json({ message: 'Instancia não existente' });
+
+            }
+
+        } catch (error) {
+            return response.status(500).json({ message: 'Erro interno do servidor' });
+        }
+
 
     },
 

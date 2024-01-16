@@ -11,6 +11,8 @@ export default class Batch {
     @Column()
     sent: boolean;
 
+    @Column({ type: 'datetime' })
+    time: Date;
 
     @ManyToOne(() => Instance, instance => instance.batches)
     @JoinColumn({ name: 'instance_id' })
