@@ -14,6 +14,10 @@ interface WhatsAppInstance {
 }
 
 const WhatsAppManager = {
+    get(instanceId: number){
+
+    },
+
     create(instanceId: number) {
         if (!intances.has(instanceId)) {
             const client = new Client({
