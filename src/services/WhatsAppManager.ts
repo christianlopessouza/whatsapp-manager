@@ -1,8 +1,3 @@
-
-
-
-
-
 import { Client, LocalAuth } from 'whatsapp-web.js';
 import qrcode from 'qrcode';
 import dataSource from '../data-source';

@@ -3,7 +3,7 @@ import dataSource from '../data-source';
 import Autosender from '../models/Autosender';
 import MessageBatch from '../models/MessageBatch';
 import { AutosendInstance, defaultConfigAutosend } from '../autosender-preset';
-import { checkAutosendTimeMiddleware } from '../middlewares/autosendMiddleware';
+import { checkAutosendMiddleware } from '../middlewares/autosendMiddleware';
 import WhatsAppManager from './WhatsAppManager';
 import BatchHistory from '../models/BatchHistory';
 import { delay } from '../services/MainServices';
@@ -98,7 +98,7 @@ const AutoSenderService = {
     async turnOnSend(instanceId: number): Promise<{ response: any; httpCode: number; }> {
         const instance = autosenderIntances.get(instanceId);
 
-        return await checkAutosendTimeMiddleware(instance!, instanceId, async () => {
+        return await checkAutosendMiddleware(instance!, instanceId, async () => {
 
             const messageBatchRepository = dataSource.getRepository(MessageBatch);
 
@@ -135,7 +135,7 @@ const AutoSenderService = {
 
 
         for (const message of batchMessages) {
-            const timerVerifyer = await checkAutosendTimeMiddleware(instance!, instanceId, async () => {
+            const timerVerifyer = await checkAutosendMiddleware(instance!, instanceId, async () => {
                 try {
                     const statusMessage = await WhatsAppManager.sendMessage(instanceId, message.message, message.number);
 
