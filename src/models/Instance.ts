@@ -24,7 +24,7 @@ export default class Instance {
         cascade: ['insert', 'update']
     })
     @JoinColumn({
-        name: 'instance_id',
+        name: 'id',
     })
     messages: Message[];
 
@@ -34,7 +34,7 @@ export default class Instance {
         cascade: ['insert', 'update'],
     })
     @JoinColumn({
-        name: 'instance_id',
+        name: 'id',
     })
     autosender: Autosender;
 
@@ -44,7 +44,7 @@ export default class Instance {
         cascade: ['insert', 'update'],
     })
     @JoinColumn({
-        name: 'instance_id',
+        name: 'id',
     })
     batches: Batch[];
 

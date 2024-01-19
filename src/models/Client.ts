@@ -16,11 +16,11 @@ export default class Client {
     active: boolean;
 
     @OneToMany(() => Instance, instance => instance.client, {
-        cascade: ['update']
+        cascade: ['update','insert']
     })
     
     @JoinColumn({
-        name: 'client_id'
+        name: 'id'
     })
     instance: Instance[];
 
