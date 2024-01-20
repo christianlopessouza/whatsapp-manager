@@ -122,6 +122,7 @@ const AutoSenderService = {
                 },
                 relations: ['batch'],
                 select: ['id', 'message', 'number', 'batch.id' as keyof MessageBatch], // Correção aqui
+                take: 100
             });
 
             if (pendingMessages.length > 0) {
