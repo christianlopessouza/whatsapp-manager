@@ -180,7 +180,10 @@ export default {
 
     },
 
-    pauseBatchSender() {
+    pauseBatchSender(request: Request, response: Response) {
+        const instance = (request as any).instance;
+
+
 
     },
 
@@ -189,6 +192,18 @@ export default {
     },
 
     listMessageBatch() {
+
+    },
+
+    async pauseAutosender(request :Request, response: Response) {
+        const instance = (request as any).instance;
+
+        const pauseResponse = await WhatsAppManager.verifyInstance(instance.id, async () => {
+            return await AutoSenderService.stop(instance.id);
+        })
+
+        response.status(pauseResponse.httpCode).json(pauseResponse.response);
+
 
     },
 
@@ -202,10 +217,6 @@ export default {
         response.status(startResponse.httpCode).json(startResponse.response);
 
     },
-
-    pauseAutosender(request: Request, response: Response) {
-
-    }
 
 
 }

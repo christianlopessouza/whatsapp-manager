@@ -8,6 +8,8 @@ import WhatsAppManager from './WhatsAppManager';
 import BatchHistory from '../models/BatchHistory';
 import Batch from '../models/Batch';
 import { delay } from '../services/MainServices';
+import { DefaultResponse } from '../services/MainServices';
+
 
 
 
@@ -72,19 +74,26 @@ const AutoSenderService = {
         }
     },
 
-    async disable(instanceId: number): Promise<void> {
+    async stop(instanceId: number): Promise<DefaultResponse> {
         await AutoSenderService.create(instanceId);
 
-        const instance = autosenderIntances.get(instanceId);
-        instance!.active = false;
+        try {
 
-        const autosenderRepository = dataSource.getRepository(Autosender);
-        await autosenderRepository.update({ id: instanceId }, { active: false });
+            const instance = autosenderIntances.get(instanceId);
+            instance!.active = false;
+
+            const autosenderRepository = dataSource.getRepository(Autosender);
+            await autosenderRepository.update({ id: instanceId }, { active: false });
+
+            return {response: {message: 'Serviço parado'}, httpCode: 200};
+        } catch (error) {
+            return { response: { message: 'Erro interno do servidor' }, httpCode: 500 }
+        }
 
     },
 
 
-    async start(instanceId: number): Promise<{ response: any, httpCode: number }> {
+    async start(instanceId: number): Promise<DefaultResponse> {
         await AutoSenderService.create(instanceId);
 
         try {
@@ -96,7 +105,7 @@ const AutoSenderService = {
 
     },
 
-    async turnOnSend(instanceId: number): Promise<{ response: any; httpCode: number; }> {
+    async turnOnSend(instanceId: number): Promise<DefaultResponse> {
         const instance = autosenderIntances.get(instanceId);
 
         return await checkAutosendMiddleware(instance!, instanceId, async () => {
@@ -198,7 +207,7 @@ const AutoSenderService = {
             }
 
             return { response: { message: 'Lote enviado' }, httpCode: 200 }
-            
+
         } catch (error) {
             return { response: { message: 'Erro interno do servidor' }, httpCode: 500 }
         }
