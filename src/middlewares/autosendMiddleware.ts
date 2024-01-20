@@ -1,5 +1,5 @@
 
-import { AutosendInstance, TimeRange } from '../autosender-preset';
+import { AutosendInstance } from '../autosender-preset';
 import { DefaultResponse } from '../services/MainServices';
 import WhatsAppManager from '../services/WhatsAppManager'
 import AutoSenderService from '../services/AutoSenderService'
@@ -29,8 +29,10 @@ const checkAutosendMiddleware = async (autosendInstance: AutosendInstance, insta
     if (!!autosendInstance.active === false) {
         return { response: { message: 'Serviço Pausado' }, httpCode: 403, errorCode: 'ER010' }
     } else if (!!isTimeValid === false) {
+        AutoSenderService.stop(instanceId);
         return { response: { message: 'Horário Inválido' }, httpCode: 403, errorCode: 'ER008' }
     } else if (!!isDayValid === false) {
+        AutoSenderService.stop(instanceId);
         return { response: { message: 'Fora do dia' }, httpCode: 403, errorCode: 'ER007' }
     } else if (!!wppSessionActive === false) {
         return { response: { message: 'Sessão Inativa' }, httpCode: 403, errorCode: 'ER011' }
