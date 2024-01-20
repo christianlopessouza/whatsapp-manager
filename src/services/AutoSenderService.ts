@@ -120,7 +120,17 @@ const AutoSenderService = {
         await AutoSenderService.create(instanceId);
 
         try {
-            return await AutoSenderService.turnOnSend(instanceId);
+            const startReponse = await AutoSenderService.turnOnSend(instanceId);
+
+            if (startReponse.httpCode == 200) {
+                const instance = autosenderIntances.get(instanceId);
+                instance!.active = true;
+
+                const autosenderRepository = dataSource.getRepository(Autosender);
+                await autosenderRepository.update({ id: instanceId }, { active: true });
+            }
+            
+            return startReponse;
 
         } catch (error) {
             return { response: { message: 'Erro interno do servidor' }, httpCode: 500 }
