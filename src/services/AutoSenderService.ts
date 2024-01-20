@@ -9,10 +9,7 @@ import BatchHistory from '../models/BatchHistory';
 import Batch from '../models/Batch';
 import { delay } from '../services/MainServices';
 import { DefaultResponse } from '../services/MainServices';
-
 import * as cron from 'node-cron';
-
-
 
 cron.schedule('* * * * *', () => { AutoSenderService.timerVerifier() })
 
@@ -83,12 +80,12 @@ const AutoSenderService = {
             autosenderIntances.forEach((instance: AutosendInstance, id) => {
                 if (instance.active === false) {
 
-                    const now = new Date();
-                    const currentTime = parseInt(now.getHours().toString() + '' + now.getMinutes().toString());
-                    const validTime = AutoSenderService.isWithinTimeRange(currentTime, instance.time);
+                    const now: Date = new Date();
+                    const currentTime: number = now.getHours() * 100 + now.getMinutes();;
+                    const validTime: boolean = AutoSenderService.isWithinTimeRange(currentTime, instance.time);
 
-                    const currentDay = now.getDay();
-                    const validDay = AutoSenderService.isCurrentDayValid(currentDay, instance.days);
+                    const currentDay: number = now.getDay();
+                    const validDay: boolean = AutoSenderService.isCurrentDayValid(currentDay, instance.days);
 
                     if (validTime && validDay) {
                         AutoSenderService.start(id)

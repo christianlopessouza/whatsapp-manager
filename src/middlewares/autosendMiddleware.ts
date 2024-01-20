@@ -6,30 +6,38 @@ import AutoSenderService from '../services/AutoSenderService'
 
 
 const checkAutosendMiddleware = async (autosendInstance: AutosendInstance, instanceId: number, action: () => Promise<DefaultResponse>) => {
-    const now = new Date();
-    const currentTime = parseInt(now.getHours().toString() + '' + now.getMinutes().toString());
-    const currentDay = now.getDay();
+    const now : Date = new Date();
+    const currentTime : number = now.getHours() * 100 + now.getMinutes();
+    const currentDay : number = now.getDay();
 
     const isTimeValid = AutoSenderService.isWithinTimeRange(currentTime, autosendInstance.time);
     const isDayValid = AutoSenderService.isCurrentDayValid(currentDay, autosendInstance.days);
 
-    const wppInstanceConnection = await WhatsAppManager.connectionStatus(instanceId);
-    const wppSessionActive = wppInstanceConnection.response.status === 'CONNECTED';
+    let wppSessionActive : boolean = false;
 
-    if (isTimeValid && isDayValid && autosendInstance.active && wppSessionActive) {
-        return action();
-    } else {
+    if (isTimeValid && isDayValid && autosendInstance.active) {
+        const wppInstanceConnection = await WhatsAppManager.connectionStatus(instanceId);
+        wppSessionActive = wppInstanceConnection.response.status === 'CONNECTED';
 
-        if (!!autosendInstance.active === false) {
-            return { response: { message: 'Serviço Pausado' }, httpCode: 403, errorCode: 'ER010' }
-        } else if (!!isTimeValid === false) {
-            return { response: { message: 'Horário Inválido' }, httpCode: 403, errorCode: 'ER008' }
-        } else if (!!isDayValid === false) {
-            return { response: { message: 'Fora do dia' }, httpCode: 403, errorCode: 'ER007' }
+        if(!!wppSessionActive === true){
+            return action();
         }
-
-        return { response: { message: 'Erro interno do servidor' }, httpCode: 500 }
     }
+
+
+
+    if (!!autosendInstance.active === false) {
+        return { response: { message: 'Serviço Pausado' }, httpCode: 403, errorCode: 'ER010' }
+    } else if (!!isTimeValid === false) {
+        return { response: { message: 'Horário Inválido' }, httpCode: 403, errorCode: 'ER008' }
+    } else if (!!isDayValid === false) {
+        return { response: { message: 'Fora do dia' }, httpCode: 403, errorCode: 'ER007' }
+    } else if (!!wppSessionActive === false) {
+        return { response: { message: 'Sessão Inativa' }, httpCode: 403, errorCode: 'ER011' }
+    }
+
+    return { response: { message: 'Erro interno do servidor' }, httpCode: 500 }
+
 
 };
 
