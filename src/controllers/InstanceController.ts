@@ -179,15 +179,7 @@ export default {
     resumeBatchSender() {
 
     },
-
-    pauseBatchSender(request: Request, response: Response) {
-        const instance = (request as any).instance;
-
-
-
-    },
-
-    listOpenBatches() {
+   listOpenBatches() {
 
     },
 

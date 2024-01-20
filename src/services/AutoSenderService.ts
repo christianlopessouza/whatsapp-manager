@@ -9,9 +9,11 @@ import BatchHistory from '../models/BatchHistory';
 import Batch from '../models/Batch';
 import { delay } from '../services/MainServices';
 import { DefaultResponse } from '../services/MainServices';
+import * as cron from 'node-cron';
 
 
 
+cron.schedule('* * * * *', () => { AutoSenderService.timerVerifier() })
 
 const autosenderIntances: Map<number, AutosendInstance> = new Map();
 
@@ -48,7 +50,8 @@ const AutoSenderService = {
                     days: dataParams.days.join(','),
                     instance: {
                         id: instanceId
-                    }
+                    },
+
                 });
 
                 await autosenderRepository.save(newAutoSendProfile);
@@ -74,6 +77,31 @@ const AutoSenderService = {
         }
     },
 
+    async timerVerifier(): Promise<void> {
+        if (autosenderIntances.size > 0) {
+            autosenderIntances.forEach((instance: AutosendInstance, id) => {
+                if (instance.active === false) {
+
+                    const now = new Date();
+                    const currentTime = parseInt(now.getHours().toString() + '' + now.getMinutes().toString());
+
+                    let { start } = instance.time;
+                    let startTime = parseInt(start.replace(/\D/g, ""));
+
+                    let validDays = instance.days;
+                    const currentDay = now.getDay();
+                    const validDay = validDays.includes(currentDay);
+
+                    if (currentTime >= startTime && validDay) {
+                        AutoSenderService.start(id)
+                    }
+                }
+            });
+        }
+    },
+
+
+
     async stop(instanceId: number): Promise<DefaultResponse> {
         await AutoSenderService.create(instanceId);
 
@@ -85,7 +113,7 @@ const AutoSenderService = {
             const autosenderRepository = dataSource.getRepository(Autosender);
             await autosenderRepository.update({ id: instanceId }, { active: false });
 
-            return {response: {message: 'Serviço parado'}, httpCode: 200};
+            return { response: { message: 'Serviço parado' }, httpCode: 200 };
         } catch (error) {
             return { response: { message: 'Erro interno do servidor' }, httpCode: 500 }
         }
@@ -206,6 +234,8 @@ const AutoSenderService = {
                 });
                 await messageBatchRepository.save(newMessageBatch);
             }
+
+            AutoSenderService.start(instaceId);
 
             return { response: { message: 'Lote enviado' }, httpCode: 200 }
 
