@@ -120,17 +120,13 @@ const AutoSenderService = {
         await AutoSenderService.create(instanceId);
 
         try {
-            const startReponse = await AutoSenderService.turnOnSend(instanceId);
+            const instance = autosenderIntances.get(instanceId);
+            instance!.active = true;
 
-            if (startReponse.httpCode == 200) {
-                const instance = autosenderIntances.get(instanceId);
-                instance!.active = true;
+            const autosenderRepository = dataSource.getRepository(Autosender);
+            await autosenderRepository.update({ id: instanceId }, { active: true });
 
-                const autosenderRepository = dataSource.getRepository(Autosender);
-                await autosenderRepository.update({ id: instanceId }, { active: true });
-            }
-            
-            return startReponse;
+            return await AutoSenderService.turnOnSend(instanceId);
 
         } catch (error) {
             return { response: { message: 'Erro interno do servidor' }, httpCode: 500 }
@@ -177,7 +173,7 @@ const AutoSenderService = {
 
 
         for (const message of batchMessages) {
-            const timerVerifyer = await checkAutosendMiddleware(instance!, instanceId, async () => {
+            const timerVerifier = await checkAutosendMiddleware(instance!, instanceId, async () => {
                 try {
                     const statusMessage = await WhatsAppManager.sendMessage(instanceId, message.message, message.number);
 
@@ -206,7 +202,7 @@ const AutoSenderService = {
 
             })
 
-            if (timerVerifyer.httpCode !== 200) return;
+            if (timerVerifier.httpCode !== 200) return;
 
         }
 
