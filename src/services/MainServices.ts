@@ -9,3 +9,6 @@ export interface DefaultResponse{
     httpCode: number,
     errorCode?:string
 }
+
+
+

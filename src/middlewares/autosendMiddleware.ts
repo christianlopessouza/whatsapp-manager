@@ -1,24 +1,8 @@
 
 import { AutosendInstance, TimeRange } from '../autosender-preset';
-import dataSource from '../data-source';
-import Autosender from '../models/Autosender';
 import { DefaultResponse } from '../services/MainServices';
 import WhatsAppManager from '../services/WhatsAppManager'
-
-
-
-function isWithinTimeRange(currentTime: number, timeRange: TimeRange): boolean {
-    const { start, end } = timeRange;
-    let startTime = parseInt(start.replace(/\D/g, ""));
-    let endTime = parseInt(end.replace(/\D/g, ""));
-    console.log(currentTime, startTime, endTime)
-
-    return currentTime >= startTime && currentTime < endTime;
-}
-
-function isCurrentDayValid(currentDay: number, validDays: number[]): boolean {
-    return validDays.includes(currentDay);
-}
+import AutoSenderService from '../services/AutoSenderService'
 
 
 const checkAutosendMiddleware = async (autosendInstance: AutosendInstance, instanceId: number, action: () => Promise<DefaultResponse>) => {
@@ -26,8 +10,8 @@ const checkAutosendMiddleware = async (autosendInstance: AutosendInstance, insta
     const currentTime = parseInt(now.getHours().toString() + '' + now.getMinutes().toString());
     const currentDay = now.getDay();
 
-    const isTimeValid = isWithinTimeRange(currentTime, autosendInstance.time);
-    const isDayValid = isCurrentDayValid(currentDay, autosendInstance.days);
+    const isTimeValid = AutoSenderService.isWithinTimeRange(currentTime, autosendInstance.time);
+    const isDayValid = AutoSenderService.isCurrentDayValid(currentDay, autosendInstance.days);
 
     const wppInstanceConnection = await WhatsAppManager.connectionStatus(instanceId);
     const wppSessionActive = wppInstanceConnection.response.status === 'CONNECTED';

@@ -2,13 +2,14 @@
 import dataSource from '../data-source';
 import Autosender from '../models/Autosender';
 import MessageBatch from '../models/MessageBatch';
-import { AutosendInstance, defaultConfigAutosend } from '../autosender-preset';
+import { AutosendInstance, defaultConfigAutosend, TimeRange } from '../autosender-preset';
 import { checkAutosendMiddleware } from '../middlewares/autosendMiddleware';
 import WhatsAppManager from './WhatsAppManager';
 import BatchHistory from '../models/BatchHistory';
 import Batch from '../models/Batch';
 import { delay } from '../services/MainServices';
 import { DefaultResponse } from '../services/MainServices';
+
 import * as cron from 'node-cron';
 
 
@@ -84,15 +85,12 @@ const AutoSenderService = {
 
                     const now = new Date();
                     const currentTime = parseInt(now.getHours().toString() + '' + now.getMinutes().toString());
+                    const validTime = AutoSenderService.isWithinTimeRange(currentTime, instance.time);
 
-                    let { start } = instance.time;
-                    let startTime = parseInt(start.replace(/\D/g, ""));
-
-                    let validDays = instance.days;
                     const currentDay = now.getDay();
-                    const validDay = validDays.includes(currentDay);
+                    const validDay = AutoSenderService.isCurrentDayValid(currentDay, instance.days);
 
-                    if (currentTime >= startTime && validDay) {
+                    if (validTime && validDay) {
                         AutoSenderService.start(id)
                     }
                 }
@@ -244,6 +242,18 @@ const AutoSenderService = {
         }
 
 
+    },
+
+    isWithinTimeRange(currentTime: number, timeRange: TimeRange): boolean {
+        const { start, end } = timeRange;
+        let startTime = parseInt(start.replace(/\D/g, ""));
+        let endTime = parseInt(end.replace(/\D/g, ""));
+
+        return currentTime >= startTime && currentTime < endTime;
+    },
+
+    isCurrentDayValid(currentDay: number, validDays: number[]): boolean {
+        return validDays.includes(currentDay);
     }
 
 
