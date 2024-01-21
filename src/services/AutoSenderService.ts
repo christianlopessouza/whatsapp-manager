@@ -2,20 +2,20 @@
 import dataSource from '../data-source';
 import Autosender from '../models/Autosender';
 import MessageBatch from '../models/MessageBatch';
-import { AutosendInstance, defaultConfigAutosend, TimeRange } from '../autosender-preset';
+import { AutosendInstance, defaultConfigAutosend, TimeRange,AutosendInstanceUpdate } from '../autosender-preset';
 import { checkAutosendMiddleware } from '../middlewares/autosendMiddleware';
 import WhatsAppManager from './WhatsAppManager';
 import BatchHistory from '../models/BatchHistory';
 import Batch from '../models/Batch';
-import { delay } from '../services/MainServices';
-import { DefaultResponse } from '../services/MainServices';
-import * as cron from 'node-cron';
-
-cron.schedule('* * * * *', () => { AutoSenderService.timerVerifier() })
+import { delay, DefaultResponse } from '../services/MainServices';
 
 const autosenderIntances: Map<number, AutosendInstance> = new Map();
 
 const AutoSenderService = {
+    async editProps(instanceId: number, props: AutosendInstanceUpdate){
+
+    },
+
     async create(instanceId: number): Promise<void> {
         const instance = autosenderIntances.get(instanceId);
 
@@ -76,6 +76,7 @@ const AutoSenderService = {
     },
 
     async timerVerifier(): Promise<void> {
+        console.log('VERIFICANDINHO');
         if (autosenderIntances.size > 0) {
             autosenderIntances.forEach((instance: AutosendInstance, id) => {
                 if (instance.active === false) {

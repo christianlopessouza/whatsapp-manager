@@ -3,59 +3,37 @@ import dataSource from '../data-source';
 import Instance from '../models/Instance';
 import WhatsAppManager from '../services/WhatsAppManager';
 import AutoSenderService from '../services/AutoSenderService';
-import { DefaultResponse } from '../services/MainServices';
+import InstanceService from '../services/InstanceService';
+import { ExtendedRequest, MessageBatchArray } from '../services/MainServices';
 
 
 
 
-export default {
-    async create(request: Request, response: Response) {
+
+const InstanceController = {
+    async create(request: ExtendedRequest, response: Response) {
         try {
+            const { name } = request.params;
+            const client = request.client!;
+            const createResponse = await InstanceService.create(name, client.id);
 
-            const selectedInstance = (request as any).instance;
-
-
-            if (!!selectedInstance === false) {
-                const { name } = request.params;
-                const client = (request as any).client;
-
-                const instanceRepository = dataSource.getRepository(Instance);
-
-                const newInstance = instanceRepository.create({
-                    name: name,
-                    client: { id: client.id },
-                    insert_timestamp: new Date()
-                });
-
-                await instanceRepository.save(newInstance);
-                return response.status(201).json(newInstance);
-
+            if (createResponse === false) {
+                return response.status(403).json({ message: 'Instancia já existente' });
             } else {
-                return response.status(403).json({ message: 'Instancia já existente para este cliente' });
+                return response.status(200).json({ message: 'Instancia Criada' });
             }
 
         } catch (error) {
-            console.log(error);
             return response.status(500).json({ message: 'Erro interno do servidor' });
-
         }
-
     },
 
-    async start(request: Request, response: Response) {
+    async start(request: ExtendedRequest, response: Response) {
         try {
-            // aqui vai inicializar o sistema
-            const instance = (request as any).instance;
+            const instance = request.instance!;
 
-            if (!!instance === true) {
-                const inicializeResponse = await WhatsAppManager.inicialize(instance.id);
-
-                return response.status(inicializeResponse.httpCode).json(inicializeResponse.response);
-
-            } else {
-                return response.status(403).json({ message: 'Instancia não existente' });
-
-            }
+            const startResponse = await WhatsAppManager.inicialize(instance.id);
+            return response.status(startResponse.httpCode).json(startResponse.response);
 
         } catch (error) {
             return response.status(500).json({ message: 'Erro interno do servidor' });
@@ -63,20 +41,12 @@ export default {
         }
     },
 
-    async restart(request: Request, response: Response) {
+    async restart(request: ExtendedRequest, response: Response) {
         try {
-            // aqui vai inicializar o sistema
-            const instance = (request as any).instance;
+            const instance = request.instance!;
 
-            if (!!instance === true) {
-                const inicializeResponse = await WhatsAppManager.restart(instance.id);
-
-                return response.status(inicializeResponse.httpCode).json(inicializeResponse.response);
-
-            } else {
-                return response.status(403).json({ message: 'Instancia não existente' });
-
-            }
+            const restartResponse = await WhatsAppManager.restart(instance.id);
+            return response.status(restartResponse.httpCode).json(restartResponse.response);
 
         } catch (error) {
             return response.status(500).json({ message: 'Erro interno do servidor' });
@@ -84,20 +54,12 @@ export default {
         }
     },
 
-    async disconnect(request: Request, response: Response) {
+    async disconnect(request: ExtendedRequest, response: Response) {
         try {
-            // aqui vai inicializar o sistema
-            const instance = (request as any).instance;
+            const instance = request.instance!;
 
-            if (!!instance === true) {
-                const inicializeResponse = await WhatsAppManager.close(instance.id);
-
-                return response.status(inicializeResponse.httpCode).json(inicializeResponse.response);
-
-            } else {
-                return response.status(403).json({ message: 'Instancia não existente' });
-
-            }
+            const disconnectResponse = await WhatsAppManager.restart(instance.id);
+            return response.status(disconnectResponse.httpCode).json(disconnectResponse.response);
 
         } catch (error) {
             return response.status(500).json({ message: 'Erro interno do servidor' });
@@ -105,11 +67,14 @@ export default {
         }
     },
 
-    async qrcode(request: Request, response: Response) {
-        const instance = (request as any).instance;
-
+    async qrcode(request: ExtendedRequest, response: Response) {
         try {
-            const qrCodeResponse = await WhatsAppManager.qrcode(instance.id);
+            const instance = request.instance!;
+
+            const qrCodeResponse = await WhatsAppManager.verifyInstance(instance.id, async () => {
+                return await WhatsAppManager.qrcode(instance.id);
+            })
+
             return response.status(qrCodeResponse.httpCode).json(qrCodeResponse.response);
 
         } catch (error) {
@@ -118,11 +83,14 @@ export default {
         }
     },
 
-    async connectionStatus(request: Request, response: Response) {
-        const instance = (request as any).instance;
-
+    async connectionStatus(request: ExtendedRequest, response: Response) {
         try {
-            const connectionResponse = await WhatsAppManager.connectionStatus(instance.id);
+            const instance = request.instance!;
+
+            const connectionResponse = await WhatsAppManager.verifyInstance(instance.id, async () => {
+                return await WhatsAppManager.connectionStatus(instance.id);
+            })
+
             return response.status(connectionResponse.httpCode).json(connectionResponse.response);
 
         } catch (error) {
@@ -131,39 +99,36 @@ export default {
         }
     },
 
-    async sendMessage(request: Request, response: Response) {
-        const instance = (request as any).instance;
-        const { message, number } = request.body;
-
-        console.log(request.body)
+    async sendMessage(request: ExtendedRequest, response: Response) {
         try {
-            const sendResponse = await WhatsAppManager.sendMessage(instance.id, message, number);
+            const instance = request.instance!;
+            const { message, number } = request.body;
+
+            const sendResponse = await WhatsAppManager.verifyInstance(instance.id, async () => {
+                return await WhatsAppManager.sendMessage(instance.id, message, number);
+            })
+
             return response.status(sendResponse.httpCode).json(sendResponse.response);
 
         } catch (error) {
-            console.log(error);
             return response.status(500).json({ message: 'Erro interno do servidor' });
         }
     },
 
 
-    async addBatch(request: Request, response: Response) {
+    async addBatch(request: ExtendedRequest, response: Response) {
         try {
-            const { messages }: { messages: { number: string, message: string }[] } = request.body;
-            // aqui vai inicializar o sistema
-            const instance = (request as any).instance;
-            if (!!instance === true) {
-                if (messages.length > 0) {
+            const { messages } = request.body;
+            const instance = request.instance!;
 
+            if (messages.length > 0) {
+                const batchResponse = InstanceService.addBatch(instance.id, messages);
+                return response.status(batchResponse.httpCode).json(batchResponse.response);
 
-                    
-                } else {
-                    return response.status(403).json({ message: 'Nenhuma mensagem enviada' });
-                }
             } else {
-                return response.status(403).json({ message: 'Instancia não existente' });
-
+                return response.status(403).json({ message: 'Nenhuma mensagem enviada' });
             }
+
 
         } catch (error) {
             return response.status(500).json({ message: 'Erro interno do servidor' });
@@ -176,39 +141,106 @@ export default {
 
     },
 
-    resumeBatchSender() {
-
-    },
-   listOpenBatches() {
+    listPendingBatches() {
 
     },
 
-    listMessageBatch() {
+    hooks(){
 
     },
 
-    async pauseAutosender(request :Request, response: Response) {
-        const instance = (request as any).instance;
 
-        const pauseResponse = await WhatsAppManager.verifyInstance(instance.id, async () => {
-            return await AutoSenderService.stop(instance.id);
-        })
+    async pauseAutosender(request: ExtendedRequest, response: Response) {
+        try {
+            const instance = request.instance!;
 
-        response.status(pauseResponse.httpCode).json(pauseResponse.response);
+            const pauseResponse = await WhatsAppManager.verifyInstance(instance.id, async () => {
+                return await AutoSenderService.stop(instance.id);
+            })
 
+            response.status(pauseResponse.httpCode).json(pauseResponse.response);
+        } catch (error) {
+            return response.status(500).json({ message: 'Erro interno do servidor' });
+
+        }
+    },
+
+    async startAutosender(request: ExtendedRequest, response: Response) {
+        try {
+            const instance = request.instance!;
+
+            const startResponse = await WhatsAppManager.verifyInstance(instance.id, async () => {
+                return await AutoSenderService.start(instance.id);
+            })
+
+            response.status(startResponse.httpCode).json(startResponse.response);
+        } catch (error) {
+            return response.status(500).json({ message: 'Erro interno do servidor' });
+        }
 
     },
 
-    async startAutosender(request: Request, response: Response) {
-        const instance = (request as any).instance;
+    async enable(request: ExtendedRequest, response: Response) {
+        try {
+            const { name } = request.params;
+            const client = request.client!;
 
-        const startResponse = await WhatsAppManager.verifyInstance(instance.id, async () => {
-            return await AutoSenderService.start(instance.id);
-        })
+            const instanceRepository = dataSource.getRepository(Instance);
 
-        response.status(startResponse.httpCode).json(startResponse.response);
+            const selectedInstance = await instanceRepository.findOne({
+                where: {
+                    name: name,
+                    client: {
+                        id: client.id
+                    }
+                },
+                select: ['id'],
+            });
+
+            if (selectedInstance === null) {
+                return response.status(403).json({ message: 'Instancia não existente' });
+            } else {
+                await instanceRepository.update({ id: selectedInstance.id }, { enabled: true });
+                return response.status(403).json({ message: 'Instancia ativada' });
+            }
+        } catch (error) {
+            return response.status(500).json({ message: 'Erro interno do servidor' });
+        }
 
     },
 
+    async disable(request: Request, response: Response) {
+        try {
+
+            const { name } = request.params;
+            const client = (request as any).client;
+
+            const instanceRepository = dataSource.getRepository(Instance);
+
+            const selectedInstance = await instanceRepository.findOne({
+                where: {
+                    name: name,
+                    client: {
+                        id: client.id
+                    }
+                },
+                select: ['id'],
+            });
+
+            if (selectedInstance === null) {
+                return response.status(403).json({ message: 'Instancia não existente' });
+            } else {
+                await WhatsAppManager.close(selectedInstance.id);
+                await AutoSenderService.stop(selectedInstance.id);
+
+                await instanceRepository.update({ id: selectedInstance.id }, { enabled: false });
+                return response.status(403).json({ message: 'Instancia desativada' });
+            }
+        } catch (error) {
+            return response.status(500).json({ message: 'Erro interno do servidor' });
+        }
+    },
 
 }
+
+export default InstanceController;

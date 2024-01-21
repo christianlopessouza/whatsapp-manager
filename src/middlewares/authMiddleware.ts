@@ -2,9 +2,10 @@ import { Request, Response, NextFunction } from 'express';
 import Client from '../models/Client';
 import ClientService from '../services/ClientService';
 import dataSource from '../data-source';
+import { ExtendedRequest } from '../services/MainServices';
 
 
-export const authenticateToken = async (req: Request, res: Response, next: NextFunction) => {
+export const authenticateToken = async (req: ExtendedRequest, res: Response, next: NextFunction) => {
     const token = req.header('Authorization');
 
     if (!token) return res.status(401).json({ message: 'Token não fornecido' });
@@ -12,20 +13,15 @@ export const authenticateToken = async (req: Request, res: Response, next: NextF
     const key = token.replace('Bearer ', '');
 
     try {
-        const keyExists = await checkKeyExists(key);
+        const client = await checkKeyExists(key);
 
-        if (!keyExists) {
+        if (!!client === false) {
             return res.status(403).json({ message: 'Chave inválida' });
         }
 
-        // Exemplo: Gera um token JWT contendo informações do usuário
-        const client = await ClientService.findByColumn('token', key);
 
         // Retorna as informações do usuário encontradas no banco de dados
-        (req as any).client = {
-            id: client.id,
-            name: client.name,
-          };
+        req.client = client;
 
         next();
 
@@ -36,17 +32,15 @@ export const authenticateToken = async (req: Request, res: Response, next: NextF
     }
 }
 
-const checkKeyExists = async (key: string): Promise<boolean> => {
-    console.log(Client);
+const checkKeyExists = async (key: string): Promise<Client | undefined> => {
     const clientRepository = dataSource.getRepository(Client);
 
     try {
         const client = await clientRepository.findOne({ where: { token: key } });
 
-        return !!client;
+        return client;
     } catch (error) {
-        console.error(error);
-        throw new Error('Erro ao verificar a chave');
+        return undefined;
     }
 };
 

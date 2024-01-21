@@ -6,7 +6,7 @@ import InstanceService from './InstanceService';
 import { DefaultResponse } from '../services/MainServices';
 
 
-const intances: Map<number, WhatsAppInstance> = new Map();
+const wppManagerInstances: Map<number, WhatsAppInstance> = new Map();
 
 interface WhatsAppInstance {
     wppClient: Client;
@@ -19,7 +19,7 @@ const WhatsAppManager = {
     },
 
     create(instanceId: number) {
-        if (!intances.has(instanceId)) {
+        if (!wppManagerInstances.has(instanceId)) {
             const client = new Client({
                 puppeteer: {
                     headless: true,
@@ -29,7 +29,7 @@ const WhatsAppManager = {
 
             });
 
-            intances.set(instanceId, { wppClient: client });
+            wppManagerInstances.set(instanceId, { wppClient: client });
             return true;
         } else {
             return false;
@@ -43,7 +43,7 @@ const WhatsAppManager = {
 
             wppClient.destroy();
 
-            intances.delete(instanceId);
+            wppManagerInstances.delete(instanceId);
 
             return { response: { message: `Sessão ${instanceId} fechada` }, httpCode: 200 };
         })
@@ -64,7 +64,7 @@ const WhatsAppManager = {
         const createStatus = WhatsAppManager.create(instanceId);
 
         if (createStatus === true) {
-            const instance = intances.get(instanceId);
+            const instance = wppManagerInstances.get(instanceId);
 
             const wppClient = instance!.wppClient;
 
@@ -180,7 +180,7 @@ const WhatsAppManager = {
     },
 
     async verifyInstance(instanceId: number, callback: (instance: WhatsAppInstance) => Promise<DefaultResponse>): Promise<DefaultResponse> {
-        const instance = intances.get(instanceId);
+        const instance = wppManagerInstances.get(instanceId);
         if (instance !== undefined) {
             return callback(instance);
         } else {

@@ -12,6 +12,9 @@ export default class Instance {
     @Column()
     name: string;
 
+    @Column()
+    enabled: boolean;
+
     @Column({ type: 'datetime' })
     insert_timestamp: Date;
 
@@ -47,5 +50,7 @@ export default class Instance {
         name: 'id',
     })
     batches: Batch[];
+
+
 
 }

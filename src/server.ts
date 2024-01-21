@@ -1,9 +1,20 @@
 import express from 'express';
 import routes from './routes';
 import dotenv from 'dotenv';
+import cron from 'node-cron';
+import AutoSenderService from './services/AutoSenderService';
+import InstanceService from './services/InstanceService';
+
+
+
 
 import './database/connection'
 dotenv.config();
+
+cron.schedule('* * * * *', () => { AutoSenderService.timerVerifier() })
+InstanceService.autoloader();
+
+
 
 
 const app = express();

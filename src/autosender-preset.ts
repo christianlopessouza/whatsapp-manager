@@ -10,9 +10,16 @@ interface ShootingTimer {
 
 interface AutosendInstance {
     time: TimeRange,
-    shootingTimer:ShootingTimer,
+    shootingTimer: ShootingTimer,
     active: boolean,
     days: number[]
+}
+
+interface AutosendInstanceUpdate {
+    time?: TimeRange,
+    shootingTimer?: ShootingTimer,
+    active?: boolean,
+    days?: number[]
 }
 
 const defaultConfigAutosend: AutosendInstance = {
@@ -30,4 +37,4 @@ const defaultConfigAutosend: AutosendInstance = {
 
 
 
-export { AutosendInstance, defaultConfigAutosend, TimeRange, ShootingTimer };
+export { AutosendInstance, defaultConfigAutosend, TimeRange, ShootingTimer, AutosendInstanceUpdate };
