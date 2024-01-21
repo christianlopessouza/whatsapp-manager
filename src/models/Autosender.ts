@@ -25,6 +25,9 @@ export default class Autosender {
     @Column()
     active: boolean;
 
+    @Column()
+    enabled: boolean;
+
     @OneToOne(() => Instance, instance => instance.autosender)
     @JoinColumn({ name: 'instance_id' })
     instance: Instance;

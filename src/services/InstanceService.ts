@@ -3,13 +3,12 @@ import dataSource from '../data-source';
 import Client from '../models/Client';
 import Instance from '../models/Instance';
 import WhatsAppManager from '../services/WhatsAppManager';
-import { MessageBatchArray } from './MainServices';
 
 
 const InstanceService = {
 
   initTrigger(instanceId: number) {
-    AutoSenderService.start(instanceId); // caso tenha o envio de mensagem automativo é iniciado
+    AutoSenderService.turnOnSend(instanceId); // caso tenha o envio de mensagem automativo é iniciado
   },
 
   async create(name: string, clientId: number): Promise<Instance | false> {
@@ -17,7 +16,8 @@ const InstanceService = {
 
     const selectedClient = await clientRepository.findOne({
       where: {
-        id: clientId
+        id: clientId,
+        name: name,
       },
       select: ['id'],
     });
@@ -28,7 +28,8 @@ const InstanceService = {
       const newInstance = instanceRepository.create({
         name: name,
         client: { id: clientId },
-        insert_timestamp: new Date()
+        insert_timestamp: new Date(),
+        enabled: true,
       });
 
       await instanceRepository.save(newInstance);
@@ -39,14 +40,9 @@ const InstanceService = {
     }
   },
 
-
-  async addBatch(instanceId: number, messages: MessageBatchArray[]) {
-
-  },
-
-
   async autoloader(): Promise<void> {
     const instanceRepository = dataSource.getRepository(Instance);
+    console.log(instanceRepository)
 
     const selectedInstance = await instanceRepository.find({
       where: {
@@ -66,3 +62,18 @@ const InstanceService = {
 }
 
 export default InstanceService;
+
+// CREATE TRIGGER after_delete_messages_batch
+// AFTER DELETE ON messages_batch
+// FOR EACH ROW
+// BEGIN
+//     -- Atualiza a coluna 'sent' em 'lotes' se não houver mais mensagens para o lote
+//     UPDATE batches
+//     SET sent = true
+//     WHERE id = OLD.batch_id
+//         AND NOT EXISTS (
+//             SELECT 1
+//             FROM messages_batch
+//             WHERE batch_id = OLD.batch_id
+//         );
+// END;

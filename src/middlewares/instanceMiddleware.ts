@@ -8,6 +8,7 @@ import { DefaultResponse } from '../services/MainServices';
 
 
 export async function getInstanceMiddleware(request: ExtendedRequest, response: Response, next: NextFunction) {
+    console.log("Aqui foi");
     const { name } = request.params;
     const client = (request as any).client;
 

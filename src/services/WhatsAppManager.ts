@@ -14,7 +14,7 @@ interface WhatsAppInstance {
 }
 
 const WhatsAppManager = {
-    get(instanceId: number){
+    get(instanceId: number) {
 
     },
 
@@ -52,10 +52,22 @@ const WhatsAppManager = {
     async restart(instanceId: number): Promise<DefaultResponse> {
         return await WhatsAppManager.verifyInstance(instanceId, async () => {
 
-            WhatsAppManager.close(instanceId);
+            await WhatsAppManager.close(instanceId);
             await WhatsAppManager.inicialize(instanceId);
 
             return { response: { message: `Sessão ${instanceId} reinicializada` }, httpCode: 200 };
+        })
+    },
+
+    async disconnect(instanceId: number): Promise<DefaultResponse> {
+        return await WhatsAppManager.verifyInstance(instanceId, async (instance) => {
+            const wppClient = instance?.wppClient;
+
+            await wppClient.logout();
+            await WhatsAppManager.close(instanceId);
+            await WhatsAppManager.inicialize(instanceId);
+
+            return { response: { message: `Sessão ${instanceId} desconectada` }, httpCode: 200 };
         })
     },
 
@@ -71,14 +83,13 @@ const WhatsAppManager = {
             wppClient.on('qr', (qr) => {
                 qrcode.toDataURL(qr, _ => {
                     instance!.qrCode = qr;
-                    console.log(qr);
 
                     // this.webhookHandler({ _id: this.profile_name, qrcode: qrcode, method: "qrcode-set" });
                 });
             });
 
             wppClient.on('disconnected', async () => {
-                WhatsAppManager.close(instanceId)
+                await WhatsAppManager.close(instanceId)
                 await WhatsAppManager.inicialize(instanceId)
             })
 
@@ -110,22 +121,23 @@ const WhatsAppManager = {
     },
 
     async connectionStatus(instanceId: number): Promise<DefaultResponse> {
-        return await WhatsAppManager.verifyInstance(instanceId, async (instance) => {
-            if (!!instance.qrCode === true) {
-                return { response: { status: 'QRCODE_SCANN' }, httpCode: 200 };
+        const instance = wppManagerInstances.get(instanceId);
+
+        if (!!instance === false) {
+            return { response: { status: 'OFF' }, httpCode: 200 };
+        } else if (!!instance.qrCode === true) {
+            return { response: { status: 'QRCODE_SCANN' }, httpCode: 200 };
+        } else {
+            const wppClient = instance?.wppClient;
+
+            let status: any = await wppClient.getState();
+
+            if (!!status === true) {
+                return { response: { status: status }, httpCode: 200 };
             } else {
-                const wppClient = instance?.wppClient;
-
-                let status: any = await wppClient.getState();
-                console.log(status);
-
-                if (!!status === true) {
-                    return { response: { status: status }, httpCode: 200 };
-                } else {
-                    return { response: { status: "OFF" }, httpCode: 200 };
-                }
+                return { response: { status: "LOADING" }, httpCode: 200 };
             }
-        })
+        }
     },
 
     async sendMessage(instanceId: number, message: string, number: string): Promise<DefaultResponse> {
@@ -148,10 +160,11 @@ const WhatsAppManager = {
                 }
 
                 let numberId = (number.length >= 10 && number.length <= 13) ? await wppClient.getNumberId(number) : false;
+                console.log(numberId),"numeruzinho nenem";
 
                 if (!!numberId === true) {
                     try {
-
+                        console.log("sopa par anois");
                         await wppClient.sendMessage(numberId._serialized, message);
 
                         dataParams.sent = true;

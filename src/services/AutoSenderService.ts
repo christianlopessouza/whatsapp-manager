@@ -29,7 +29,7 @@ const AutoSenderService = {
                         id: instanceId
                     }
                 },
-                select: ['id', 'shooting_min', 'shooting_max', 'timer_start', 'timer_end', 'days']
+                select: ['id', 'shooting_min', 'shooting_max', 'timer_start', 'timer_end', 'days', 'active']
             });
 
 
@@ -76,7 +76,6 @@ const AutoSenderService = {
     },
 
     async timerVerifier(): Promise<void> {
-        console.log('VERIFICANDINHO');
         if (autosenderIntances.size > 0) {
             autosenderIntances.forEach((instance: AutosendInstance, id) => {
                 if (instance.active === false) {
@@ -89,7 +88,7 @@ const AutoSenderService = {
                     const validDay: boolean = AutoSenderService.isCurrentDayValid(currentDay, instance.days);
 
                     if (validTime && validDay) {
-                        AutoSenderService.start(id)
+                        AutoSenderService.turnOnSend(id);
                     }
                 }
             });
@@ -136,34 +135,41 @@ const AutoSenderService = {
     },
 
     async turnOnSend(instanceId: number): Promise<DefaultResponse> {
-        const instance = autosenderIntances.get(instanceId);
+        await AutoSenderService.create(instanceId);
+        try {
+            console.log("tentei")
+            const instance = autosenderIntances.get(instanceId);
+            return await checkAutosendMiddleware(instance!, instanceId, async () => {
 
-        return await checkAutosendMiddleware(instance!, instanceId, async () => {
+                const messageBatchRepository = dataSource.getRepository(MessageBatch);
 
-            const messageBatchRepository = dataSource.getRepository(MessageBatch);
-
-            const pendingMessages = await messageBatchRepository.find({
-                where: {
-                    batch: {
-                        instance: {
-                            id: instanceId
+                const pendingMessages = await messageBatchRepository.find({
+                    where: {
+                        batch: {
+                            instance: {
+                                id: instanceId
+                            }
                         }
-                    }
-                },
-                relations: ['batch'],
-                select: ['id', 'message', 'number', 'batch.id' as keyof MessageBatch], // Correção aqui
-                take: 100
-            });
+                    },
+                    relations: ['batch'],
+                    select: ['id', 'message', 'number', 'batch.id' as keyof MessageBatch], // Correção aqui
+                    take: 100
+                });
+                console.log("hablo portuges")
 
-            if (pendingMessages.length > 0) {
-                AutoSenderService.sendBatchMessages(instanceId, pendingMessages);
-                return { response: { message: 'Serviço iniciado' }, httpCode: 200 };
+                if (pendingMessages.length > 0) {
+                    AutoSenderService.sendBatchMessages(instanceId, pendingMessages);
+                    return { response: { message: 'Serviço iniciado' }, httpCode: 200 };
 
-            } else {
-                return { response: { message: 'Todas mensagens enviadas' }, httpCode: 200 };
+                } else {
+                    return { response: { message: 'Todas mensagens enviadas' }, httpCode: 200 };
 
-            }
-        })
+                }
+            })
+        } catch (error) {
+            console.log(error)
+            return { response: { message: 'Erro interno do servidor' }, httpCode: 500 }
+        }
 
     },
 
@@ -176,6 +182,8 @@ const AutoSenderService = {
         for (const message of batchMessages) {
             const timerVerifier = await checkAutosendMiddleware(instance!, instanceId, async () => {
                 try {
+                    console.log("aqui enviei")
+
                     const statusMessage = await WhatsAppManager.sendMessage(instanceId, message.message, message.number);
 
                     const messageBatchRepository = dataSource.getRepository(MessageBatch);
@@ -210,7 +218,7 @@ const AutoSenderService = {
         AutoSenderService.turnOnSend(instanceId)
     },
 
-    async addBatch(instaceId: number, messages: { number: string, message: string }[]) {
+    async addBatch(instanceId: number, messages: { number: string, message: string }[]) {
         try {
             const batchRepository = dataSource.getRepository(Batch)
 
@@ -218,8 +226,9 @@ const AutoSenderService = {
                 time: new Date(),
                 sent: false,
                 instance: {
-                    id: instaceId,
-                }
+                    id: instanceId,
+                },
+                deleted: false
             });
 
             const { id: batchId } = await batchRepository.save(newBatch);
@@ -232,16 +241,17 @@ const AutoSenderService = {
                     number: message.number,
                     batch: {
                         id: batchId
-                    }
+                    },
                 });
                 await messageBatchRepository.save(newMessageBatch);
             }
 
-            AutoSenderService.start(instaceId);
+            AutoSenderService.turnOnSend(instanceId);
 
             return { response: { message: 'Lote enviado' }, httpCode: 200 }
 
         } catch (error) {
+            console.log(error)
             return { response: { message: 'Erro interno do servidor' }, httpCode: 500 }
         }
 
@@ -271,6 +281,18 @@ const AutoSenderService = {
 
     },
 
+    async status(instanceId: number) {
+        await AutoSenderService.create(instanceId);
+        try {
+            const instance = autosenderIntances.get(instanceId);
+            return !!instance!.active; // Retorna o status atual do serviço de envio automático
+
+        } catch (error) {
+            return false;
+        }
+
+    },
+
     async listBatchMessages(batchId: number) {
         const messageBatchRepository = dataSource.getRepository(MessageBatch);
 
@@ -283,9 +305,9 @@ const AutoSenderService = {
             select: ['id', 'message', 'number']
         });
 
-        if(messagesBatch.length > 0){
+        if (messagesBatch.length > 0) {
             return messagesBatch
-        }else{
+        } else {
             return false;
         }
     },
@@ -302,6 +324,7 @@ const AutoSenderService = {
     isCurrentDayValid(currentDay: number, validDays: number[]): boolean {
         return validDays.includes(currentDay);
     }
+
 
 
 

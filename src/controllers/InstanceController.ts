@@ -13,6 +13,39 @@ import Batch from '../models/Batch';
 
 
 const InstanceController = {
+    async getInstances(request: ExtendedRequest, response: Response) {
+        try {
+            const instanceRepository = dataSource.getRepository(Instance);
+
+            const selectedInstances = await instanceRepository.find({
+                where: {
+                    enabled: true
+                },
+                select: ['id', 'name'],
+            });
+
+            let list = [];
+
+            for (const instance of selectedInstances) {
+                let { id, name } = instance;
+                let statusResponse = await WhatsAppManager.connectionStatus(id);
+                let connection = statusResponse.response.status ?? statusResponse.response.message;
+
+                list.push({
+                    name: name,
+                    id: id,
+                    connection: connection
+                })
+            }
+
+            return response.status(200).json({ instances: list });
+
+
+        } catch (error) {
+            return response.status(500).json({ message: 'Erro interno do servidor' });
+        }
+    },
+
     async create(request: ExtendedRequest, response: Response) {
         try {
             const { name } = request.params;
@@ -42,6 +75,18 @@ const InstanceController = {
 
         }
     },
+    async stop(request: ExtendedRequest, response: Response) {
+        try {
+            const instance = request.instance!;
+
+            const stopResponse = await WhatsAppManager.close(instance.id);
+            return response.status(stopResponse.httpCode).json(stopResponse.response);
+
+        } catch (error) {
+            return response.status(500).json({ message: 'Erro interno do servidor' });
+
+        }
+    },
 
     async restart(request: ExtendedRequest, response: Response) {
         try {
@@ -60,7 +105,7 @@ const InstanceController = {
         try {
             const instance = request.instance!;
 
-            const disconnectResponse = await WhatsAppManager.restart(instance.id);
+            const disconnectResponse = await WhatsAppManager.disconnect(instance.id);
             return response.status(disconnectResponse.httpCode).json(disconnectResponse.response);
 
         } catch (error) {
@@ -80,7 +125,6 @@ const InstanceController = {
             return response.status(qrCodeResponse.httpCode).json(qrCodeResponse.response);
 
         } catch (error) {
-            console.log(error);
             return response.status(500).json({ message: 'Erro interno do servidor' });
         }
     },
@@ -96,7 +140,6 @@ const InstanceController = {
             return response.status(connectionResponse.httpCode).json(connectionResponse.response);
 
         } catch (error) {
-            console.log(error);
             return response.status(500).json({ message: 'Erro interno do servidor' });
         }
     },
@@ -105,6 +148,7 @@ const InstanceController = {
         try {
             const instance = request.instance!;
             const { message, number } = request.body;
+            console.log(request.body)
 
             const sendResponse = await WhatsAppManager.verifyInstance(instance.id, async () => {
                 return await WhatsAppManager.sendMessage(instance.id, message, number);
@@ -123,16 +167,21 @@ const InstanceController = {
             const { messages } = request.body;
             const instance = request.instance!;
 
-            if (messages.length > 0) {
-                const batchResponse = await AutoSenderService.addBatch(instance.id, messages);
-                return response.status(batchResponse.httpCode).json(batchResponse.response);
+            if (messages) {
+                if (messages.length > 0) {
+                    const batchResponse = await AutoSenderService.addBatch(instance.id, messages);
+                    return response.status(batchResponse.httpCode).json(batchResponse.response);
 
+                } else {
+                    return response.status(403).json({ message: 'Nenhuma mensagem enviada' });
+                }
             } else {
                 return response.status(403).json({ message: 'Nenhuma mensagem enviada' });
             }
 
 
         } catch (error) {
+            console.log(error);
             return response.status(500).json({ message: 'Erro interno do servidor' });
         }
 
@@ -244,7 +293,7 @@ const InstanceController = {
             const listResponse = await AutoSenderService.listBatchMessages(instance.id);
             if (!!listResponse == true) {
                 return response.status(200).json(listResponse)
-            }else{
+            } else {
                 return response.status(403).json({ message: 'Não há lotes pendentes' })
             }
 
@@ -318,11 +367,11 @@ const InstanceController = {
 
     },
 
-    async disable(request: Request, response: Response) {
+    async disable(request: ExtendedRequest, response: Response) {
         try {
 
             const { name } = request.params;
-            const client = (request as any).client;
+            const client = request.client!;
 
             const instanceRepository = dataSource.getRepository(Instance);
 
@@ -349,6 +398,18 @@ const InstanceController = {
             return response.status(500).json({ message: 'Erro interno do servidor' });
         }
     },
+
+    async autoSenderStatus(request: ExtendedRequest, response: Response) {
+        try {
+            const instance = request.instance!;
+            const status = AutoSenderService.status(instance.id);
+
+            return response.status(200).json({ status: status });
+        } catch (error) {
+            return response.status(500).json({ message: 'Erro interno do servidor' });
+
+        }
+    }
 
 }
 

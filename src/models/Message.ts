@@ -13,6 +13,9 @@ export default class Message {
     @Column()
     number: string;
 
+    @Column()
+    sent: boolean;
+
     @Column({ type: 'datetime' })
     insert_timestamp: Date;
 
