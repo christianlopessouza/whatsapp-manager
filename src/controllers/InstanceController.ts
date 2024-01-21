@@ -5,6 +5,8 @@ import WhatsAppManager from '../services/WhatsAppManager';
 import AutoSenderService from '../services/AutoSenderService';
 import InstanceService from '../services/InstanceService';
 import { ExtendedRequest, MessageBatchArray } from '../services/MainServices';
+import { parse } from 'dotenv';
+import Batch from '../models/Batch';
 
 
 
@@ -122,7 +124,7 @@ const InstanceController = {
             const instance = request.instance!;
 
             if (messages.length > 0) {
-                const batchResponse = InstanceService.addBatch(instance.id, messages);
+                const batchResponse = await AutoSenderService.addBatch(instance.id, messages);
                 return response.status(batchResponse.httpCode).json(batchResponse.response);
 
             } else {
@@ -137,15 +139,122 @@ const InstanceController = {
 
     },
 
-    deleteBatch() {
+    async deleteBatch(request: ExtendedRequest, response: Response) {
+        try {
+            const instance = request.instance!;
+            let { id } = request.params;
+            const parsedId: number = parseInt(id, 10);
 
+
+            if (!!parsedId === false) {
+                // verificar se o lote passado pertence a instancia informada
+                const batchRepository = dataSource.getRepository(Batch);
+
+                const selectedBatch = await batchRepository.findOne({
+                    where: {
+                        instance: {
+                            id: instance.id
+                        },
+                        id: parsedId
+                    }
+                });
+
+                if (!!selectedBatch === true) {
+                    const batchResponse = await AutoSenderService.deleteBatch(parsedId);
+                    return response.status(batchResponse.httpCode).json(batchResponse.response);
+                } else {
+                    return response.status(403).json({ message: 'Lote inválido' });
+                }
+
+            } else {
+                return response.status(403).json({ message: 'Lote inválido' });
+            }
+
+        } catch (error) {
+            return response.status(500).json({ message: 'Erro interno do servidor' });
+
+        }
     },
 
-    listPendingBatches() {
+    async deletePeddingBatches(request: ExtendedRequest, response: Response) {
+        try {
+            const instance = request.instance!;
 
+            const batchRepository = dataSource.getRepository(Batch);
+
+            const selectedBatch = await batchRepository.find({
+                where: {
+                    instance: {
+                        id: instance.id
+                    },
+                    sent: false
+                }
+            });
+
+            if (selectedBatch.length > 0) {
+                for (const batch of selectedBatch) {
+                    await AutoSenderService.deleteBatch(batch.id);
+                }
+                return response.status(200).json({ message: 'Lotes pendentes de envio deletados' });
+            } else {
+                return response.status(403).json({ message: 'Não há lotes pendentes de envio' });
+            }
+
+        } catch (error) {
+            return response.status(500).json({ message: 'Erro interno do servidor' });
+
+        }
     },
 
-    hooks(){
+    async deleteLastBatch(request: ExtendedRequest, response: Response) {
+        try {
+            const instance = request.instance!;
+
+            const batchRepository = dataSource.getRepository(Batch);
+
+            const selectedBatch = await batchRepository.findOne({
+                where: {
+                    instance: {
+                        id: instance.id
+                    },
+                    sent: false
+                },
+                order: {
+                    id: 'DESC'
+                }
+            });
+
+            if (!!selectedBatch === true) {
+                await AutoSenderService.deleteBatch(selectedBatch.id);
+                return response.status(200).json({ message: 'Ultimo lote pendente de envio deletado' });
+            } else {
+                return response.status(403).json({ message: 'Não há lotes pendentes de envio' });
+            }
+
+        } catch (error) {
+            return response.status(500).json({ message: 'Erro interno do servidor' });
+
+        }
+    },
+
+
+    async listPendingBatches(request: ExtendedRequest, response: Response) {
+        try {
+            const instance = request.instance!;
+            const listResponse = await AutoSenderService.listBatchMessages(instance.id);
+            if (!!listResponse == true) {
+                return response.status(200).json(listResponse)
+            }else{
+                return response.status(403).json({ message: 'Não há lotes pendentes' })
+            }
+
+        } catch (error) {
+            return response.status(500).json({ message: 'Erro interno do servidor' });
+
+        }
+    },
+
+    hooks(request: ExtendedRequest, response: Response) {
 
     },
 

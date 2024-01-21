@@ -11,6 +11,9 @@ export default class Batch {
     @Column()
     sent: boolean;
 
+    @Column()
+    deleted: boolean;
+
     @Column({ type: 'datetime' })
     time: Date;
 

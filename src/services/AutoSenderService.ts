@@ -2,7 +2,7 @@
 import dataSource from '../data-source';
 import Autosender from '../models/Autosender';
 import MessageBatch from '../models/MessageBatch';
-import { AutosendInstance, defaultConfigAutosend, TimeRange,AutosendInstanceUpdate } from '../autosender-preset';
+import { AutosendInstance, defaultConfigAutosend, TimeRange, AutosendInstanceUpdate } from '../autosender-preset';
 import { checkAutosendMiddleware } from '../middlewares/autosendMiddleware';
 import WhatsAppManager from './WhatsAppManager';
 import BatchHistory from '../models/BatchHistory';
@@ -12,7 +12,7 @@ import { delay, DefaultResponse } from '../services/MainServices';
 const autosenderIntances: Map<number, AutosendInstance> = new Map();
 
 const AutoSenderService = {
-    async editProps(instanceId: number, props: AutosendInstanceUpdate){
+    async editProps(instanceId: number, props: AutosendInstanceUpdate) {
 
     },
 
@@ -247,6 +247,49 @@ const AutoSenderService = {
 
 
     },
+
+    async deleteBatch(batchId: number) {
+        const messageBatchRepository = dataSource.getRepository(MessageBatch);
+
+        const deleteResponse = await messageBatchRepository.delete({
+            batch: {
+                id: batchId,
+            }
+        });
+
+        if (deleteResponse.affected !== 0) {
+            const batchRepository = dataSource.getRepository(Batch);
+
+            await batchRepository.update({
+                id: batchId,
+            }, { sent: true });
+
+            return { response: { message: 'Lote deletado' }, httpCode: 200 }
+        } else {
+            return { response: { message: 'Lote não existente' }, httpCode: 403 }
+        }
+
+    },
+
+    async listBatchMessages(batchId: number) {
+        const messageBatchRepository = dataSource.getRepository(MessageBatch);
+
+        const messagesBatch = await messageBatchRepository.find({
+            where: {
+                batch: {
+                    id: batchId,
+                }
+            },
+            select: ['id', 'message', 'number']
+        });
+
+        if(messagesBatch.length > 0){
+            return messagesBatch
+        }else{
+            return false;
+        }
+    },
+
 
     isWithinTimeRange(currentTime: number, timeRange: TimeRange): boolean {
         const { start, end } = timeRange;
