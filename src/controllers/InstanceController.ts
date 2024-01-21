@@ -148,7 +148,6 @@ const InstanceController = {
         try {
             const instance = request.instance!;
             const { message, number } = request.body;
-            console.log(request.body)
 
             const sendResponse = await WhatsAppManager.verifyInstance(instance.id, async () => {
                 return await WhatsAppManager.sendMessage(instance.id, message, number);
@@ -181,7 +180,6 @@ const InstanceController = {
 
 
         } catch (error) {
-            console.log(error);
             return response.status(500).json({ message: 'Erro interno do servidor' });
         }
 
@@ -192,10 +190,10 @@ const InstanceController = {
         try {
             const instance = request.instance!;
             let { id } = request.params;
-            const parsedId: number = parseInt(id, 10);
+            const parsedId: number = parseInt(id);
 
 
-            if (!!parsedId === false) {
+            if (!!parsedId === true) {
                 // verificar se o lote passado pertence a instancia informada
                 const batchRepository = dataSource.getRepository(Batch);
 
@@ -290,7 +288,7 @@ const InstanceController = {
     async listPendingBatches(request: ExtendedRequest, response: Response) {
         try {
             const instance = request.instance!;
-            const listResponse = await AutoSenderService.listBatchMessages(instance.id);
+            const listResponse = await AutoSenderService.listBatchMessagesByInstance(instance.id);
             if (!!listResponse == true) {
                 return response.status(200).json(listResponse)
             } else {

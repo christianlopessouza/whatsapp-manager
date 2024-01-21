@@ -160,11 +160,9 @@ const WhatsAppManager = {
                 }
 
                 let numberId = (number.length >= 10 && number.length <= 13) ? await wppClient.getNumberId(number) : false;
-                console.log(numberId),"numeruzinho nenem";
 
                 if (!!numberId === true) {
                     try {
-                        console.log("sopa par anois");
                         await wppClient.sendMessage(numberId._serialized, message);
 
                         dataParams.sent = true;

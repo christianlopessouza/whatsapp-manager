@@ -137,7 +137,6 @@ const AutoSenderService = {
     async turnOnSend(instanceId: number): Promise<DefaultResponse> {
         await AutoSenderService.create(instanceId);
         try {
-            console.log("tentei")
             const instance = autosenderIntances.get(instanceId);
             return await checkAutosendMiddleware(instance!, instanceId, async () => {
 
@@ -155,7 +154,6 @@ const AutoSenderService = {
                     select: ['id', 'message', 'number', 'batch.id' as keyof MessageBatch], // Correção aqui
                     take: 100
                 });
-                console.log("hablo portuges")
 
                 if (pendingMessages.length > 0) {
                     AutoSenderService.sendBatchMessages(instanceId, pendingMessages);
@@ -167,7 +165,6 @@ const AutoSenderService = {
                 }
             })
         } catch (error) {
-            console.log(error)
             return { response: { message: 'Erro interno do servidor' }, httpCode: 500 }
         }
 
@@ -182,8 +179,6 @@ const AutoSenderService = {
         for (const message of batchMessages) {
             const timerVerifier = await checkAutosendMiddleware(instance!, instanceId, async () => {
                 try {
-                    console.log("aqui enviei")
-
                     const statusMessage = await WhatsAppManager.sendMessage(instanceId, message.message, message.number);
 
                     const messageBatchRepository = dataSource.getRepository(MessageBatch);
@@ -251,7 +246,6 @@ const AutoSenderService = {
             return { response: { message: 'Lote enviado' }, httpCode: 200 }
 
         } catch (error) {
-            console.log(error)
             return { response: { message: 'Erro interno do servidor' }, httpCode: 500 }
         }
 
@@ -293,7 +287,26 @@ const AutoSenderService = {
 
     },
 
-    async listBatchMessages(batchId: number) {
+    async listBatchMessagesByInstance(instanceId: number) {
+        const messageBatchRepository = dataSource.getRepository(MessageBatch);
+
+        const messagesBatch = await messageBatchRepository.find({
+            where: {
+                batch: {
+                    instance: { id: instanceId }
+                }
+            },
+            select: ['id', 'message', 'number']
+        });
+
+        if (messagesBatch.length > 0) {
+            return messagesBatch
+        } else {
+            return false;
+        }
+    },
+
+    async listBatchMessagesByBatch(batchId: number) {
         const messageBatchRepository = dataSource.getRepository(MessageBatch);
 
         const messagesBatch = await messageBatchRepository.find({

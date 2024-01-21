@@ -42,7 +42,6 @@ const InstanceService = {
 
   async autoloader(): Promise<void> {
     const instanceRepository = dataSource.getRepository(Instance);
-    console.log(instanceRepository)
 
     const selectedInstance = await instanceRepository.find({
       where: {

@@ -6,6 +6,7 @@ import InstanceController from './controllers/InstanceController';
 
 const routes = Router();
 
+routes.get('/instance/list', authenticateToken, InstanceController.getInstances)
 
 routes.get('/instance/:name/start', authenticateToken, getInstanceMiddleware, InstanceController.start)
 routes.get('/instance/:name/stop', authenticateToken, getInstanceMiddleware, InstanceController.stop)
@@ -15,14 +16,18 @@ routes.get('/instance/:name/connection', authenticateToken, getInstanceMiddlewar
 routes.get('/instance/:name/disconnect', authenticateToken, getInstanceMiddleware, InstanceController.disconnect)
 routes.get('/instance/:name/startAutosender', authenticateToken, getInstanceMiddleware, InstanceController.startAutosender)
 routes.get('/instance/:name/pauseAutosender', authenticateToken, getInstanceMiddleware, InstanceController.pauseAutosender)
-routes.get('/instance/list', authenticateToken, InstanceController.getInstances)
-routes.get('/instance/:name/autosender', authenticateToken, InstanceController.autoSenderStatus)
+routes.get('/instance/:name/pendingBatches', authenticateToken, getInstanceMiddleware, InstanceController.listPendingBatches)
+routes.get('/instance/:name/autosender', authenticateToken, getInstanceMiddleware, InstanceController.autoSenderStatus)
+routes.get('/instance/:name/disable', authenticateToken, InstanceController.disable)
+routes.get('/instance/:name/enable', authenticateToken, InstanceController.enable)
 
 routes.post('/instance/:name/send', authenticateToken, getInstanceMiddleware, InstanceController.sendMessage)
 routes.post('/instance/:name/addBatch', authenticateToken, getInstanceMiddleware, InstanceController.addBatch)
+routes.post('/instance/:name/deleteLastBatch', authenticateToken,getInstanceMiddleware, InstanceController.deleteLastBatch)
+routes.post('/instance/:name/deletePeddingBatches', authenticateToken,getInstanceMiddleware, InstanceController.deletePeddingBatches)
+routes.post('/instance/:name/deleteBatch/:id', authenticateToken,getInstanceMiddleware, InstanceController.deleteBatch)
 routes.post('/instance/:name', authenticateToken, InstanceController.create)
-routes.post('/instance/:name/disable', authenticateToken, InstanceController.disable)
-routes.post('/instance/:name/enable', authenticateToken, InstanceController.enable)
+
 
 
 export default routes;
