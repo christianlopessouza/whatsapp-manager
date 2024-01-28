@@ -1,7 +1,7 @@
 version: '3'
 services:
   app:
-    image: sua-imagem
+    image: wpp-application
     volumes:
       - dados-sqlite:/app/database.sqlite
       - .:/app
