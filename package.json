@@ -7,7 +7,6 @@
     "node-cron": "^3.0.3",
     "qrcode": "^1.5.3",
     "sqlite3": "^5.1.7",
-    "tsc": "^2.0.4",
     "typecript": "^0.0.1-security",
     "typeorm": "^0.3.19",
     "whatsapp-web.js": "^1.23.0",

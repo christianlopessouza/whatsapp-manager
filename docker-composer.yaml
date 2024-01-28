@@ -1,0 +1,13 @@
+version: '3'
+services:
+  app:
+    image: sua-imagem
+    volumes:
+      - dados-sqlite:/app/database.sqlite
+      - .:/app
+    ports:
+      - "82:3324"
+  # Outros serviços podem ser adicionados conforme necessário
+
+volumes:
+  dados-sqlite:
