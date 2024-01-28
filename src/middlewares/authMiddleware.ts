@@ -32,7 +32,7 @@ export const authenticateToken = async (req: ExtendedRequest, res: Response, nex
     }
 }
 
-const checkKeyExists = async (key: string): Promise<Client | undefined> => {
+const checkKeyExists = async (key: string): Promise<Client | undefined | null> => {
     const clientRepository = dataSource.getRepository(Client);
 
     try {

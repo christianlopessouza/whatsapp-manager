@@ -1,10 +1,11 @@
 import { DataSource } from 'typeorm';
+import { APP_DIR } from './config'
 
 const dataSource = new DataSource({
   type: 'sqlite',
-  database: './src/database/database.sqlite',
-  migrations: ['./src/database/migrations/*.ts'],
-  entities: ['./src/models/*.ts'],
+  database: './database.sqlite',
+  migrations: [`./${APP_DIR}/database/migrations/*.ts`],
+  entities: [`./${APP_DIR}/models/*.ts`],
 });
 console.log('Entidades lidas:', dataSource.options.entities);
 

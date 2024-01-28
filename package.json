@@ -21,7 +21,8 @@
     "dev": " ts-node-dev --transpile-only --ignore-watch node_modules src/server.ts",
     "typeorm": "ts-node-dev ./node_modules/typeorm/cli.js",
     "migration-run": "ts-node-dev ./node_modules/typeorm/cli.js migration:run -- -d ./src/data-source.ts",
-    "migration-create": "yarn typeorm migration:create ./src/database/migrations/create_instances"
+    "migration-create": "yarn typeorm migration:create ./src/database/migrations/create_instances",
+    "start": "NODE_ENV=production nodemon dist/server.js"
   },
   "keywords": [],
   "author": "",
