@@ -9,14 +9,54 @@ import BatchHistory from '../models/BatchHistory';
 import Batch from '../models/Batch';
 import { WebHook } from './WebHook';
 import { delay, DefaultResponse } from '../services/MainServices';
-import Instance from '../models/Instance';
 
 
 const autosenderIntances: Map<number, AutosendInstance> = new Map();
 
 const AutoSenderService = {
-    async editProps(instanceId: number, props: AutosendInstanceUpdate) {
+    async editProps(instanceId: number, editedProps: AutosendInstanceUpdate) {
+        try {
+            const instance = autosenderIntances.get(instanceId);
 
+            if (instance !== undefined && !!editedProps) {
+                const dataParams = {
+                    ...instance,
+                    ...editedProps
+                }
+
+                autosenderIntances.set(instanceId, dataParams)
+
+                const autosenderRepository = dataSource.getRepository(Autosender);
+
+                const response = await autosenderRepository.update({ instance: { id: instanceId } }, {
+                    shooting_min: dataParams.shootingTimer.min,
+                    shooting_max: dataParams.shootingTimer.max,
+                    timer_start: dataParams.time.start,
+                    timer_end: dataParams.time.end,
+                    active: dataParams.active,
+                    days: dataParams.days.join(',')
+                });
+
+                console.log(response)
+                console.log(dataParams)
+                console.log({ id: instanceId }, {
+                    shooting_min: dataParams.shootingTimer.min,
+                    shooting_max: dataParams.shootingTimer.max,
+                    timer_start: dataParams.time.start,
+                    timer_end: dataParams.time.end,
+                    active: dataParams.active,
+                    days: dataParams.days.join(',')
+                })
+
+
+                return true;
+
+            } else {
+                return false;
+            }
+        } catch (error) {
+            return false;
+        }
     },
 
     async create(instanceId: number): Promise<void> {
@@ -109,7 +149,7 @@ const AutoSenderService = {
             instance!.active = false;
 
             const autosenderRepository = dataSource.getRepository(Autosender);
-            await autosenderRepository.update({ id: instanceId }, { active: false });
+            await autosenderRepository.update({ instance: { id: instanceId } }, { active: false });
 
             return { response: { message: 'Serviço parado' }, httpCode: 200 };
         } catch (error) {
@@ -127,7 +167,7 @@ const AutoSenderService = {
             instance!.active = true;
 
             const autosenderRepository = dataSource.getRepository(Autosender);
-            await autosenderRepository.update({ id: instanceId }, { active: true });
+            await autosenderRepository.update({ instance: { id: instanceId } }, { active: true });
 
             return await AutoSenderService.turnOnSend(instanceId);
 

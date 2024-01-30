@@ -15,7 +15,6 @@ const checkAutosendMiddleware = async (autosendInstance: AutosendInstance, insta
 
     let wppSessionActive : boolean = false;
 
-    console.log(isTimeValid, isDayValid, autosendInstance);
     if (isTimeValid && isDayValid && autosendInstance.active) {
         const wppInstanceConnection = await WhatsAppManager.connectionStatus(instanceId);
         wppSessionActive = wppInstanceConnection.response.status === 'CONNECTED';

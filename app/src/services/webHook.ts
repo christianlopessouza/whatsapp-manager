@@ -4,7 +4,7 @@ import axios from "axios";
 const WebHook = (url: string, data: any): void => {
     axios.post(url, data)
         .then((res: any) => {
-            console.log(res)
+            //console.log(res)
         })
         .catch((err: any) => {
             console.error(err.toJSON())

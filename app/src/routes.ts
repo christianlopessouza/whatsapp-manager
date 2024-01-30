@@ -23,9 +23,10 @@ routes.get('/instance/:name/enable', authenticateToken, InstanceController.enabl
 
 routes.post('/instance/:name/send', authenticateToken, getInstanceMiddleware, InstanceController.sendMessage)
 routes.post('/instance/:name/addBatch', authenticateToken, getInstanceMiddleware, InstanceController.addBatch)
-routes.post('/instance/:name/deleteLastBatch', authenticateToken,getInstanceMiddleware, InstanceController.deleteLastBatch)
-routes.post('/instance/:name/deletePeddingBatches', authenticateToken,getInstanceMiddleware, InstanceController.deletePeddingBatches)
-routes.post('/instance/:name/deleteBatch/:id', authenticateToken,getInstanceMiddleware, InstanceController.deleteBatch)
+routes.post('/instance/:name/deleteLastBatch', authenticateToken, getInstanceMiddleware, InstanceController.deleteLastBatch)
+routes.post('/instance/:name/deletePendingBatches', authenticateToken, getInstanceMiddleware, InstanceController.deletePeddingBatches)
+routes.post('/instance/:name/deleteBatch/:id', authenticateToken, getInstanceMiddleware, InstanceController.deleteBatch)
+routes.post('/instance/:name/editAutosender', authenticateToken, getInstanceMiddleware, InstanceController.editAutosender)
 routes.post('/instance/:name', authenticateToken, InstanceController.create)
 
 
