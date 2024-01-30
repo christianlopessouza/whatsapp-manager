@@ -1,7 +1,7 @@
 import axios from "axios";
 
 // Enviar solicitação POST com os dados JSON
-export default (url: string, data: any): void => {
+const WebHook = (url: string, data: any): void => {
     axios.post(url, data)
         .then((res: any) => {
             console.log(res)
@@ -10,3 +10,6 @@ export default (url: string, data: any): void => {
             console.error(err.toJSON())
         })
 }
+
+
+export { WebHook };

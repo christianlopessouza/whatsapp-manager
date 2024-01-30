@@ -27,7 +27,6 @@ export const authenticateToken = async (req: ExtendedRequest, res: Response, nex
 
 
     } catch (error) {
-        console.error(error);
         res.status(500).json({ message: 'Erro interno do servidor' });
     }
 }

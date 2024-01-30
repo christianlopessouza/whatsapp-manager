@@ -2355,7 +2355,7 @@ source-map@^0.6.0:
 
 sqlite3@^5.1.7:
   version "5.1.7"
-  resolved "https://registry.npmjs.org/sqlite3/-/sqlite3-5.1.7.tgz"
+  resolved "https://registry.yarnpkg.com/sqlite3/-/sqlite3-5.1.7.tgz#59ca1053c1ab38647396586edad019b1551041b7"
   integrity sha512-GGIyOiFaG+TUra3JIfkI/zGP8yZYLPQ0pl1bH+ODjiX57sPhrLU5sQJn1y9bDKZUFYkX1crlrPfSYt0BKKdkog==
   dependencies:
     bindings "^1.5.0"

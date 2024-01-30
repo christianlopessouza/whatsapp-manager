@@ -7,7 +7,10 @@ import { checkAutosendMiddleware } from '../middlewares/autosendMiddleware';
 import WhatsAppManager from './WhatsAppManager';
 import BatchHistory from '../models/BatchHistory';
 import Batch from '../models/Batch';
+import { WebHook } from './WebHook';
 import { delay, DefaultResponse } from '../services/MainServices';
+import Instance from '../models/Instance';
+
 
 const autosenderIntances: Map<number, AutosendInstance> = new Map();
 
@@ -49,7 +52,7 @@ const AutoSenderService = {
                     instance: {
                         id: instanceId
                     },
-
+                    enabled: true
                 });
 
                 await autosenderRepository.save(newAutoSendProfile);
@@ -142,7 +145,7 @@ const AutoSenderService = {
 
                 const messageBatchRepository = dataSource.getRepository(MessageBatch);
 
-                const pendingMessages = await messageBatchRepository.find({
+                const latestBatch = await messageBatchRepository.findOne({
                     where: {
                         batch: {
                             instance: {
@@ -151,18 +154,29 @@ const AutoSenderService = {
                         }
                     },
                     relations: ['batch'],
-                    select: ['id', 'message', 'number', 'batch.id' as keyof MessageBatch], // Correção aqui
-                    take: 100
+                    order: {
+                        id: 'ASC' // Ordena por id de forma decrescente para obter o lote mais recente
+                    }
                 });
 
-                if (pendingMessages.length > 0) {
+                if (latestBatch) {
+                    const pendingMessages = await messageBatchRepository.find({
+                        where: {
+                            batch: {
+                                id: latestBatch.batch.id
+                            }
+                        },
+                        relations: ['batch'],
+                        select: ['id', 'message', 'number', 'batch.id' as keyof MessageBatch], // Correção aqui
+                        take: 100
+                    });
+
                     AutoSenderService.sendBatchMessages(instanceId, pendingMessages);
                     return { response: { message: 'Serviço iniciado' }, httpCode: 200 };
-
                 } else {
                     return { response: { message: 'Todas mensagens enviadas' }, httpCode: 200 };
-
                 }
+
             })
         } catch (error) {
             return { response: { message: 'Erro interno do servidor' }, httpCode: 500 }
@@ -175,10 +189,14 @@ const AutoSenderService = {
 
         const instance = autosenderIntances.get(instanceId);
 
+        let batchId = batchMessages[0].batch.id;
 
         for (const message of batchMessages) {
             const timerVerifier = await checkAutosendMiddleware(instance!, instanceId, async () => {
                 try {
+                    const delayInSeconds = Math.floor(Math.random() * instance!.shootingTimer.max) + instance!.shootingTimer.min;
+                    await delay(delayInSeconds);
+
                     const statusMessage = await WhatsAppManager.sendMessage(instanceId, message.message, message.number);
 
                     const messageBatchRepository = dataSource.getRepository(MessageBatch);
@@ -196,8 +214,7 @@ const AutoSenderService = {
                     });
                     await batchHistoryRepository.save(newMessageHistory);
 
-                    const delayInSeconds = Math.floor(Math.random() * instance!.shootingTimer.max) + instance!.shootingTimer.min;
-                    await delay(delayInSeconds);
+
 
                     return { response: { message: 'Mensagem enviada' }, httpCode: 200 }
                 } catch (error) {
@@ -205,12 +222,48 @@ const AutoSenderService = {
                 }
 
             })
-
             if (timerVerifier.httpCode !== 200) return;
-
         }
 
+        await AutoSenderService.batchVerifier(batchId);
+
         AutoSenderService.turnOnSend(instanceId)
+    },
+
+    async batchVerifier(batchId: number): Promise<void> {
+        const messageBatchRepository = dataSource.getRepository(MessageBatch);
+
+        const selectedMessageBatch = await messageBatchRepository.findOne({
+            where: {
+                batch: {
+                    id: batchId
+                }
+            }
+        });
+
+        if (!!selectedMessageBatch === false) {
+            const batchRepository = dataSource.getRepository(Batch);
+            await batchRepository.update({
+                id: batchId,
+            }, { sent: true });
+
+            const selectedBatch = await batchRepository.findOne({
+                where: {
+                    id: batchId
+                },
+                relations: ['instance', 'instance.client']
+            });
+
+            const client = selectedBatch!.instance.client;
+            if (!!client.hook_url === true) {
+                WebHook(client.hook_url, {
+                    batchId: batchId,
+                    status: 'success',
+                    method: 'batchSent'
+                });
+            }
+            // ativa o hook 
+        }
     },
 
     async addBatch(instanceId: number, messages: { number: string, message: string }[]) {

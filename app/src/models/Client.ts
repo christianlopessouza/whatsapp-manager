@@ -13,6 +13,9 @@ export default class Client {
     token: string;
 
     @Column()
+    hook_url: string;
+
+    @Column()
     active: boolean;
 
     @OneToMany(() => Instance, instance => instance.client, {

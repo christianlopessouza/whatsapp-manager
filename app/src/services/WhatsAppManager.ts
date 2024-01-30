@@ -2,8 +2,10 @@ import { Client, LocalAuth } from 'whatsapp-web.js';
 import qrcode from 'qrcode';
 import dataSource from '../data-source';
 import Message from '../models/Message';
+import Instance from '../models/Instance';
 import InstanceService from './InstanceService';
 import { DefaultResponse } from '../services/MainServices';
+import { WebHook } from './WebHook';
 
 
 const wppManagerInstances: Map<number, WhatsAppInstance> = new Map();
@@ -14,10 +16,6 @@ interface WhatsAppInstance {
 }
 
 const WhatsAppManager = {
-    get(instanceId: number) {
-
-    },
-
     create(instanceId: number) {
         if (!wppManagerInstances.has(instanceId)) {
             const client = new Client({
@@ -78,13 +76,30 @@ const WhatsAppManager = {
         if (createStatus === true) {
             const instance = wppManagerInstances.get(instanceId);
 
+            const instanceRepository = dataSource.getRepository(Instance);
+
+            const selectedInstance = await instanceRepository.findOne({
+                where: {
+                    id: instanceId
+                },
+                relations: ['client']
+            })
+
+            const client = selectedInstance!.client;
+
             const wppClient = instance!.wppClient;
 
             wppClient.on('qr', (qr) => {
-                qrcode.toDataURL(qr, _ => {
+                qrcode.toDataURL(qr, (_) => {
                     instance!.qrCode = qr;
 
-                    // this.webhookHandler({ _id: this.profile_name, qrcode: qrcode, method: "qrcode-set" });
+                    if (!!client.hook_url === true) {
+                        WebHook(client.hook_url, {
+                            qrcode: qr,
+                            status: 'success',
+                            method: 'qrCode'
+                        });
+                    }
                 });
             });
 
@@ -97,8 +112,13 @@ const WhatsAppManager = {
                 instance!.qrCode = "";
                 InstanceService.initTrigger(instanceId);
 
-
-                // this.webhookHandler({ _id: this.profile_name, status: true, status_code: 4, method: "session_status" });
+                if (!!client.hook_url === true) {
+                    WebHook(client.hook_url, {
+                        connected: true,
+                        status: 'success',
+                        method: 'connected'
+                    });
+                }
             });
 
             wppClient.initialize();

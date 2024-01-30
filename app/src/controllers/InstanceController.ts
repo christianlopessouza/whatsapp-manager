@@ -182,8 +182,6 @@ const InstanceController = {
         } catch (error) {
             return response.status(500).json({ message: 'Erro interno do servidor' });
         }
-
-
     },
 
     async deleteBatch(request: ExtendedRequest, response: Response) {
