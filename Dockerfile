@@ -53,16 +53,18 @@ RUN apt-get update && \
     lsb-release \
     xdg-utils \
     wget \
+    sqlite3 \
     && rm -rf /var/lib/apt/lists/*
+    
 
 # Definir o diretório de trabalho dentro do contêiner
 WORKDIR /app
 
-# Copie os arquivos do código fonte para o contêiner
-COPY . .
-
-# Instale as dependências da aplicação
+COPY ./app/package*.json .
 RUN npm install
+
+# Copie os arquivos do código fonte para o contêiner
+COPY ./app/ .
 
 # Expor a porta em que a aplicação está escutando
 EXPOSE 82

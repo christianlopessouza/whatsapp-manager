@@ -5,6 +5,7 @@
     "express": "^4.18.2",
     "jsonwebtoken": "^9.0.2",
     "node-cron": "^3.0.3",
+    "nodemon": "^3.0.3",
     "qrcode": "^1.5.3",
     "sqlite3": "^5.1.7",
     "typecript": "^0.0.1-security",
@@ -22,7 +23,8 @@
     "migration-run-dev": "ts-node-dev ./node_modules/typeorm/cli.js migration:run -- -d ./src/data-source.ts",
     "migration-create": "yarn typeorm migration:create ./src/database/migrations/create_instances",
     "start": "NODE_ENV=production nodemon dist/server.js",
-    "migration-run": "node ./node_modules/typeorm/cli.js migration:run -d ./dist/data-source.js"
+    "migration-run": "node ./node_modules/typeorm/cli.js migration:run -d ./dist/data-source.js",
+    "start-win": "nodemon dist/server.js"
   },
   "keywords": [],
   "author": "",
