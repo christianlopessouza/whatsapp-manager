@@ -11,10 +11,44 @@ const autosendMiddleware_1 = require("../middlewares/autosendMiddleware");
 const WhatsAppManager_1 = __importDefault(require("./WhatsAppManager"));
 const BatchHistory_1 = __importDefault(require("../models/BatchHistory"));
 const Batch_1 = __importDefault(require("../models/Batch"));
+const WebHook_1 = require("./WebHook");
 const MainServices_1 = require("../services/MainServices");
 const autosenderIntances = new Map();
 const AutoSenderService = {
-    async editProps(instanceId, props) {
+    async editProps(instanceId, editedProps) {
+        try {
+            const instance = autosenderIntances.get(instanceId);
+            if (instance !== undefined && !!editedProps) {
+                const dataParams = Object.assign(Object.assign({}, instance), editedProps);
+                autosenderIntances.set(instanceId, dataParams);
+                const autosenderRepository = data_source_1.default.getRepository(Autosender_1.default);
+                const response = await autosenderRepository.update({ instance: { id: instanceId } }, {
+                    shooting_min: dataParams.shootingTimer.min,
+                    shooting_max: dataParams.shootingTimer.max,
+                    timer_start: dataParams.time.start,
+                    timer_end: dataParams.time.end,
+                    active: dataParams.active,
+                    days: dataParams.days.join(',')
+                });
+                console.log(response);
+                console.log(dataParams);
+                console.log({ id: instanceId }, {
+                    shooting_min: dataParams.shootingTimer.min,
+                    shooting_max: dataParams.shootingTimer.max,
+                    timer_start: dataParams.time.start,
+                    timer_end: dataParams.time.end,
+                    active: dataParams.active,
+                    days: dataParams.days.join(',')
+                });
+                return true;
+            }
+            else {
+                return false;
+            }
+        }
+        catch (error) {
+            return false;
+        }
     },
     async create(instanceId) {
         const instance = autosenderIntances.get(instanceId);
@@ -41,6 +75,7 @@ const AutoSenderService = {
                     instance: {
                         id: instanceId
                     },
+                    enabled: true
                 });
                 await autosenderRepository.save(newAutoSendProfile);
             }
@@ -84,7 +119,7 @@ const AutoSenderService = {
             const instance = autosenderIntances.get(instanceId);
             instance.active = false;
             const autosenderRepository = data_source_1.default.getRepository(Autosender_1.default);
-            await autosenderRepository.update({ id: instanceId }, { active: false });
+            await autosenderRepository.update({ instance: { id: instanceId } }, { active: false });
             return { response: { message: 'Serviço parado' }, httpCode: 200 };
         }
         catch (error) {
@@ -97,7 +132,7 @@ const AutoSenderService = {
             const instance = autosenderIntances.get(instanceId);
             instance.active = true;
             const autosenderRepository = data_source_1.default.getRepository(Autosender_1.default);
-            await autosenderRepository.update({ id: instanceId }, { active: true });
+            await autosenderRepository.update({ instance: { id: instanceId } }, { active: true });
             return await AutoSenderService.turnOnSend(instanceId);
         }
         catch (error) {
@@ -110,7 +145,7 @@ const AutoSenderService = {
             const instance = autosenderIntances.get(instanceId);
             return await (0, autosendMiddleware_1.checkAutosendMiddleware)(instance, instanceId, async () => {
                 const messageBatchRepository = data_source_1.default.getRepository(MessageBatch_1.default);
-                const pendingMessages = await messageBatchRepository.find({
+                const latestBatch = await messageBatchRepository.findOne({
                     where: {
                         batch: {
                             instance: {
@@ -119,10 +154,21 @@ const AutoSenderService = {
                         }
                     },
                     relations: ['batch'],
-                    select: ['id', 'message', 'number', 'batch.id'], // Correção aqui
-                    take: 100
+                    order: {
+                        id: 'ASC' // Ordena por id de forma decrescente para obter o lote mais recente
+                    }
                 });
-                if (pendingMessages.length > 0) {
+                if (latestBatch) {
+                    const pendingMessages = await messageBatchRepository.find({
+                        where: {
+                            batch: {
+                                id: latestBatch.batch.id
+                            }
+                        },
+                        relations: ['batch'],
+                        select: ['id', 'message', 'number', 'batch.id'], // Correção aqui
+                        take: 100
+                    });
                     AutoSenderService.sendBatchMessages(instanceId, pendingMessages);
                     return { response: { message: 'Serviço iniciado' }, httpCode: 200 };
                 }
@@ -138,9 +184,12 @@ const AutoSenderService = {
     async sendBatchMessages(instanceId, batchMessages) {
         await AutoSenderService.create(instanceId);
         const instance = autosenderIntances.get(instanceId);
+        let batchId = batchMessages[0].batch.id;
         for (const message of batchMessages) {
             const timerVerifier = await (0, autosendMiddleware_1.checkAutosendMiddleware)(instance, instanceId, async () => {
                 try {
+                    const delayInSeconds = Math.floor(Math.random() * instance.shootingTimer.max) + instance.shootingTimer.min;
+                    await (0, MainServices_1.delay)(delayInSeconds);
                     const statusMessage = await WhatsAppManager_1.default.sendMessage(instanceId, message.message, message.number);
                     const messageBatchRepository = data_source_1.default.getRepository(MessageBatch_1.default);
                     await messageBatchRepository.remove(message);
@@ -154,8 +203,6 @@ const AutoSenderService = {
                         }
                     });
                     await batchHistoryRepository.save(newMessageHistory);
-                    const delayInSeconds = Math.floor(Math.random() * instance.shootingTimer.max) + instance.shootingTimer.min;
-                    await (0, MainServices_1.delay)(delayInSeconds);
                     return { response: { message: 'Mensagem enviada' }, httpCode: 200 };
                 }
                 catch (error) {
@@ -165,7 +212,39 @@ const AutoSenderService = {
             if (timerVerifier.httpCode !== 200)
                 return;
         }
+        await AutoSenderService.batchVerifier(batchId);
         AutoSenderService.turnOnSend(instanceId);
+    },
+    async batchVerifier(batchId) {
+        const messageBatchRepository = data_source_1.default.getRepository(MessageBatch_1.default);
+        const selectedMessageBatch = await messageBatchRepository.findOne({
+            where: {
+                batch: {
+                    id: batchId
+                }
+            }
+        });
+        if (!!selectedMessageBatch === false) {
+            const batchRepository = data_source_1.default.getRepository(Batch_1.default);
+            await batchRepository.update({
+                id: batchId,
+            }, { sent: true });
+            const selectedBatch = await batchRepository.findOne({
+                where: {
+                    id: batchId
+                },
+                relations: ['instance', 'instance.client']
+            });
+            const client = selectedBatch.instance.client;
+            if (!!client.hook_url === true) {
+                (0, WebHook_1.WebHook)(client.hook_url, {
+                    batchId: batchId,
+                    status: 'success',
+                    method: 'batchSent'
+                });
+            }
+            // ativa o hook 
+        }
     },
     async addBatch(instanceId, messages) {
         try {

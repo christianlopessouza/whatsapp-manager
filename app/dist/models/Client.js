@@ -30,6 +30,10 @@ __decorate([
 ], Client.prototype, "token", void 0);
 __decorate([
     (0, typeorm_1.Column)(),
+    __metadata("design:type", String)
+], Client.prototype, "hook_url", void 0);
+__decorate([
+    (0, typeorm_1.Column)(),
     __metadata("design:type", Boolean)
 ], Client.prototype, "active", void 0);
 __decorate([

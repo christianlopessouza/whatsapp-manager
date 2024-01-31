@@ -340,6 +340,22 @@ const InstanceController = {
         catch (error) {
             return response.status(500).json({ message: 'Erro interno do servidor' });
         }
+    },
+    async editAutosender(request, response) {
+        try {
+            const instance = request.instance;
+            const body = request.body;
+            const editResponse = await AutoSenderService_1.default.editProps(instance.id, body);
+            if (editResponse === true) {
+                response.status(200).json({ message: 'Dados alterados' });
+            }
+            else {
+                response.status(403).json({ message: 'Dados inválidos' });
+            }
+        }
+        catch (error) {
+            return response.status(500).json({ message: 'Erro interno do servidor' });
+        }
     }
 };
 exports.default = InstanceController;

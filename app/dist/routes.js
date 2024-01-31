@@ -24,7 +24,8 @@ routes.get('/instance/:name/enable', authMiddleware_1.authenticateToken, Instanc
 routes.post('/instance/:name/send', authMiddleware_1.authenticateToken, instanceMiddleware_1.getInstanceMiddleware, InstanceController_1.default.sendMessage);
 routes.post('/instance/:name/addBatch', authMiddleware_1.authenticateToken, instanceMiddleware_1.getInstanceMiddleware, InstanceController_1.default.addBatch);
 routes.post('/instance/:name/deleteLastBatch', authMiddleware_1.authenticateToken, instanceMiddleware_1.getInstanceMiddleware, InstanceController_1.default.deleteLastBatch);
-routes.post('/instance/:name/deletePeddingBatches', authMiddleware_1.authenticateToken, instanceMiddleware_1.getInstanceMiddleware, InstanceController_1.default.deletePeddingBatches);
+routes.post('/instance/:name/deletePendingBatches', authMiddleware_1.authenticateToken, instanceMiddleware_1.getInstanceMiddleware, InstanceController_1.default.deletePeddingBatches);
 routes.post('/instance/:name/deleteBatch/:id', authMiddleware_1.authenticateToken, instanceMiddleware_1.getInstanceMiddleware, InstanceController_1.default.deleteBatch);
+routes.post('/instance/:name/editAutosender', authMiddleware_1.authenticateToken, instanceMiddleware_1.getInstanceMiddleware, InstanceController_1.default.editAutosender);
 routes.post('/instance/:name', authMiddleware_1.authenticateToken, InstanceController_1.default.create);
 exports.default = routes;

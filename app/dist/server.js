@@ -16,6 +16,12 @@ const config_1 = require("./config");
     InstanceService_1.default.autoloader();
     const app = (0, express_1.default)();
     app.use(express_1.default.json());
+    app.use((err, req, res, next) => {
+        if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
+            return res.status(400).json({ error: 'Erro de sintaxe.' });
+        }
+        next();
+    });
     app.use(routes_1.default);
     app.listen(config_1.PORT, config_1.GATEWAY);
     console.log(`SERVER RODANDO NA PORTA ${config_1.PORT}`);

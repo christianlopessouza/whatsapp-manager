@@ -3,7 +3,6 @@ import { APP_DIR,FILE_FORMAT } from './config'
 
 
 
-
 const dataSource = new DataSource({
   type: 'sqlite',
   database: `./database.sqlite`,

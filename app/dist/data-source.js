@@ -8,5 +8,4 @@ const dataSource = new typeorm_1.DataSource({
     migrations: [`./${config_1.APP_DIR}/database/migrations/*.${config_1.FILE_FORMAT}`],
     entities: [`./${config_1.APP_DIR}/models/*.${config_1.FILE_FORMAT}`],
 });
-console.log('Entidades lidas:', dataSource.options.entities);
 exports.default = dataSource;

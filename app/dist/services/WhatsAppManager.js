@@ -7,11 +7,11 @@ const whatsapp_web_js_1 = require("whatsapp-web.js");
 const qrcode_1 = __importDefault(require("qrcode"));
 const data_source_1 = __importDefault(require("../data-source"));
 const Message_1 = __importDefault(require("../models/Message"));
+const Instance_1 = __importDefault(require("../models/Instance"));
 const InstanceService_1 = __importDefault(require("./InstanceService"));
+const WebHook_1 = require("./WebHook");
 const wppManagerInstances = new Map();
 const WhatsAppManager = {
-    get(instanceId) {
-    },
     create(instanceId) {
         if (!wppManagerInstances.has(instanceId)) {
             const client = new whatsapp_web_js_1.Client({
@@ -56,11 +56,25 @@ const WhatsAppManager = {
         const createStatus = WhatsAppManager.create(instanceId);
         if (createStatus === true) {
             const instance = wppManagerInstances.get(instanceId);
+            const instanceRepository = data_source_1.default.getRepository(Instance_1.default);
+            const selectedInstance = await instanceRepository.findOne({
+                where: {
+                    id: instanceId
+                },
+                relations: ['client']
+            });
+            const client = selectedInstance.client;
             const wppClient = instance.wppClient;
             wppClient.on('qr', (qr) => {
-                qrcode_1.default.toDataURL(qr, _ => {
+                qrcode_1.default.toDataURL(qr, (_) => {
                     instance.qrCode = qr;
-                    // this.webhookHandler({ _id: this.profile_name, qrcode: qrcode, method: "qrcode-set" });
+                    if (!!client.hook_url === true) {
+                        (0, WebHook_1.WebHook)(client.hook_url, {
+                            qrcode: qr,
+                            status: 'success',
+                            method: 'qrCode'
+                        });
+                    }
                 });
             });
             wppClient.on('disconnected', async () => {
@@ -70,7 +84,13 @@ const WhatsAppManager = {
             wppClient.on('ready', async () => {
                 instance.qrCode = "";
                 InstanceService_1.default.initTrigger(instanceId);
-                // this.webhookHandler({ _id: this.profile_name, status: true, status_code: 4, method: "session_status" });
+                if (!!client.hook_url === true) {
+                    (0, WebHook_1.WebHook)(client.hook_url, {
+                        connected: true,
+                        status: 'success',
+                        method: 'connected'
+                    });
+                }
             });
             wppClient.initialize();
             return { response: { message: `Instancia ${instanceId} iniciada` }, httpCode: 200 };
