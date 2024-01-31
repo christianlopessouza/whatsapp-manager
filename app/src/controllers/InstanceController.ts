@@ -75,7 +75,8 @@ const InstanceController = {
 
         }
     },
-    async stop(request: ExtendedRequest, response: Response) {
+    
+    async close(request: ExtendedRequest, response: Response) {
         try {
             const instance = request.instance!;
 

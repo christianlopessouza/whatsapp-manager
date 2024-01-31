@@ -9,7 +9,7 @@ const routes = Router();
 routes.get('/instance/list', authenticateToken, InstanceController.getInstances)
 
 routes.get('/instance/:name/start', authenticateToken, getInstanceMiddleware, InstanceController.start)
-routes.get('/instance/:name/stop', authenticateToken, getInstanceMiddleware, InstanceController.stop)
+routes.get('/instance/:name/close', authenticateToken, getInstanceMiddleware, InstanceController.close)
 routes.get('/instance/:name/restart', authenticateToken, getInstanceMiddleware, InstanceController.restart)
 routes.get('/instance/:name/qrcode', authenticateToken, getInstanceMiddleware, InstanceController.qrcode)
 routes.get('/instance/:name/connection', authenticateToken, getInstanceMiddleware, InstanceController.connectionStatus)
