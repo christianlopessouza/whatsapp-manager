@@ -6,7 +6,7 @@ export class AddColumnMessages1705171315311 implements MigrationInterface {
         await queryRunner.addColumn('messages', new TableColumn({
             name: 'sent',
             type: 'integer',
-            default: false,
+            default: 1,
             isNullable: false,
         }));
     }
