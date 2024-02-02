@@ -5,7 +5,7 @@ export class AddColumnBatches1705853173911 implements MigrationInterface {
     public async up(queryRunner: QueryRunner): Promise<void> {
         await queryRunner.addColumn('batches', new TableColumn({
             name: 'deleted',
-            type: 'boolean',
+            type: 'integer',
             default: false,
             isNullable: false,
         }));

@@ -23,7 +23,7 @@ export class CreateBatch1705173481048 implements MigrationInterface {
                 },
                 {
                     name: 'sent',
-                    type: 'boolean'
+                    type: 'integer'
                 }
             ],
             foreignKeys: [

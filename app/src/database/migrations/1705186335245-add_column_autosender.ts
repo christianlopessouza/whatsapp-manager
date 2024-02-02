@@ -5,7 +5,7 @@ export class AddColumnAutosender1705186335245 implements MigrationInterface {
     public async up(queryRunner: QueryRunner): Promise<void> {
         await queryRunner.addColumn('autosender', new TableColumn({
             name: 'active',
-            type: 'boolean',
+            type: 'integer',
             default: true,
             isNullable: false,
         }));

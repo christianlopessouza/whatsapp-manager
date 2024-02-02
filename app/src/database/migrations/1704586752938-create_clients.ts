@@ -29,7 +29,7 @@ export class CreateClients1704586752938 implements MigrationInterface {
                 },
                 {
                     name:'active',
-                    type:'boolean'
+                    type:'integer'
                 }
             ]
         }))

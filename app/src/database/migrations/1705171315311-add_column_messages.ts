@@ -5,7 +5,7 @@ export class AddColumnMessages1705171315311 implements MigrationInterface {
     public async up(queryRunner: QueryRunner): Promise<void> {
         await queryRunner.addColumn('messages', new TableColumn({
             name: 'sent',
-            type: 'boolean',
+            type: 'integer',
             default: false,
             isNullable: false,
         }));
