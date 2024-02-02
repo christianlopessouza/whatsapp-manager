@@ -6,8 +6,8 @@ class AddColumnMessages1705171315311 {
     async up(queryRunner) {
         await queryRunner.addColumn('messages', new typeorm_1.TableColumn({
             name: 'sent',
-            type: 'boolean',
-            default: false,
+            type: 'integer',
+            default: 1,
             isNullable: false,
         }));
     }

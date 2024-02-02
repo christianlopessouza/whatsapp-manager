@@ -63,7 +63,7 @@ const InstanceController = {
             return response.status(500).json({ message: 'Erro interno do servidor' });
         }
     },
-    async stop(request, response) {
+    async close(request, response) {
         try {
             const instance = request.instance;
             const stopResponse = await WhatsAppManager_1.default.close(instance.id);

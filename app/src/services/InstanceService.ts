@@ -12,19 +12,20 @@ const InstanceService = {
   },
 
   async create(name: string, clientId: number): Promise<Instance | false> {
-    const clientRepository = dataSource.getRepository(Client);
+    const instanceRepository = dataSource.getRepository(Instance);
 
-    const selectedClient = await clientRepository.findOne({
+
+    const selectedClient = await instanceRepository.findOne({
       where: {
-        id: clientId,
+        client: {
+          id: clientId,
+        },
         name: name,
       },
       select: ['id'],
     });
 
     if (!!selectedClient === false) {
-      const instanceRepository = dataSource.getRepository(Instance);
-
       const newInstance = instanceRepository.create({
         name: name,
         client: { id: clientId },

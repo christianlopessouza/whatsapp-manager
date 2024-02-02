@@ -29,7 +29,7 @@ class CreateClients1704586752938 {
                 },
                 {
                     name: 'active',
-                    type: 'boolean'
+                    type: 'integer'
                 }
             ]
         }));

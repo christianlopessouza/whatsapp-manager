@@ -24,7 +24,7 @@ class CreateBatch1705173481048 {
                 },
                 {
                     name: 'sent',
-                    type: 'boolean'
+                    type: 'integer'
                 }
             ],
             foreignKeys: [

@@ -5,7 +5,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const AutoSenderService_1 = __importDefault(require("./AutoSenderService"));
 const data_source_1 = __importDefault(require("../data-source"));
-const Client_1 = __importDefault(require("../models/Client"));
 const Instance_1 = __importDefault(require("../models/Instance"));
 const WhatsAppManager_1 = __importDefault(require("../services/WhatsAppManager"));
 const InstanceService = {
@@ -13,16 +12,17 @@ const InstanceService = {
         AutoSenderService_1.default.turnOnSend(instanceId); // caso tenha o envio de mensagem automativo é iniciado
     },
     async create(name, clientId) {
-        const clientRepository = data_source_1.default.getRepository(Client_1.default);
-        const selectedClient = await clientRepository.findOne({
+        const instanceRepository = data_source_1.default.getRepository(Instance_1.default);
+        const selectedClient = await instanceRepository.findOne({
             where: {
-                id: clientId,
+                client: {
+                    id: clientId,
+                },
                 name: name,
             },
             select: ['id'],
         });
         if (!!selectedClient === false) {
-            const instanceRepository = data_source_1.default.getRepository(Instance_1.default);
             const newInstance = instanceRepository.create({
                 name: name,
                 client: { id: clientId },

@@ -6,8 +6,8 @@ class AddColumnBatches1705853173911 {
     async up(queryRunner) {
         await queryRunner.addColumn('batches', new typeorm_1.TableColumn({
             name: 'deleted',
-            type: 'boolean',
-            default: false,
+            type: 'integer',
+            default: 0,
             isNullable: false,
         }));
     }

@@ -6,8 +6,8 @@ class AddColumnInstance1705785442298 {
     async up(queryRunner) {
         await queryRunner.addColumn('autosender', new typeorm_1.TableColumn({
             name: 'enabled',
-            type: 'boolean',
-            default: true,
+            type: 'integer',
+            default: 1,
             isNullable: false,
         }));
     }

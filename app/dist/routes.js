@@ -10,7 +10,7 @@ const InstanceController_1 = __importDefault(require("./controllers/InstanceCont
 const routes = (0, express_1.Router)();
 routes.get('/instance/list', authMiddleware_1.authenticateToken, InstanceController_1.default.getInstances);
 routes.get('/instance/:name/start', authMiddleware_1.authenticateToken, instanceMiddleware_1.getInstanceMiddleware, InstanceController_1.default.start);
-routes.get('/instance/:name/stop', authMiddleware_1.authenticateToken, instanceMiddleware_1.getInstanceMiddleware, InstanceController_1.default.stop);
+routes.get('/instance/:name/close', authMiddleware_1.authenticateToken, instanceMiddleware_1.getInstanceMiddleware, InstanceController_1.default.close);
 routes.get('/instance/:name/restart', authMiddleware_1.authenticateToken, instanceMiddleware_1.getInstanceMiddleware, InstanceController_1.default.restart);
 routes.get('/instance/:name/qrcode', authMiddleware_1.authenticateToken, instanceMiddleware_1.getInstanceMiddleware, InstanceController_1.default.qrcode);
 routes.get('/instance/:name/connection', authMiddleware_1.authenticateToken, instanceMiddleware_1.getInstanceMiddleware, InstanceController_1.default.connectionStatus);

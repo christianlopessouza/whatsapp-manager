@@ -6,8 +6,8 @@ class AddColumnInstances1705858652408 {
     async up(queryRunner) {
         await queryRunner.addColumn('instances', new typeorm_1.TableColumn({
             name: 'enabled',
-            type: 'boolean',
-            default: true,
+            type: 'integer',
+            default: 1,
             isNullable: false,
         }));
     }
