@@ -6,7 +6,7 @@ export class AddColumnBatches1705853173911 implements MigrationInterface {
         await queryRunner.addColumn('batches', new TableColumn({
             name: 'deleted',
             type: 'integer',
-            default: false,
+            default: 0,
             isNullable: false,
         }));
     }

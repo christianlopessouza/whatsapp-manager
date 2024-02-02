@@ -6,7 +6,7 @@ export class AddColumnInstances1705858652408 implements MigrationInterface {
         await queryRunner.addColumn('instances', new TableColumn({
             name: 'enabled',
             type: 'integer',
-            default: true,
+            default: 1,
             isNullable: false,
         }));
     }
