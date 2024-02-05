@@ -3,10 +3,14 @@ import { AutosendInstance } from '../autosender-preset';
 import { DefaultResponse } from '../services/MainServices';
 import WhatsAppManager from '../services/WhatsAppManager'
 import AutoSenderService from '../services/AutoSenderService'
+const timeZone = "America/Sao_Paulo";
+
+
 
 
 const checkAutosendMiddleware = async (autosendInstance: AutosendInstance, instanceId: number, action: () => Promise<DefaultResponse>) => {
-    const now : Date = new Date();
+
+    const now = new Date(new Date().toLocaleString("en-US", { timeZone }));
     const currentTime : number = now.getHours() * 100 + now.getMinutes();
     const currentDay : number = now.getDay();
 
@@ -23,7 +27,6 @@ const checkAutosendMiddleware = async (autosendInstance: AutosendInstance, insta
             return action();
         }
     }
-
 
 
     if (!!autosendInstance.active === false) {

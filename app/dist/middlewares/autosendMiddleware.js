@@ -6,8 +6,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.checkAutosendMiddleware = void 0;
 const WhatsAppManager_1 = __importDefault(require("../services/WhatsAppManager"));
 const AutoSenderService_1 = __importDefault(require("../services/AutoSenderService"));
+const timeZone = "America/Sao_Paulo";
 const checkAutosendMiddleware = async (autosendInstance, instanceId, action) => {
-    const now = new Date();
+    const now = new Date(new Date().toLocaleString("en-US", { timeZone }));
     const currentTime = now.getHours() * 100 + now.getMinutes();
     const currentDay = now.getDay();
     const isTimeValid = AutoSenderService_1.default.isWithinTimeRange(currentTime, autosendInstance.time);

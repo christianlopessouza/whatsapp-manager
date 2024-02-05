@@ -169,7 +169,9 @@ const AutoSenderService = {
             const autosenderRepository = dataSource.getRepository(Autosender);
             await autosenderRepository.update({ instance: { id: instanceId } }, { active: true });
 
-            return await AutoSenderService.turnOnSend(instanceId);
+            await AutoSenderService.turnOnSend(instanceId);
+
+            return { response: { message: 'Serviço Iniciado' }, httpCode: 200 };
 
         } catch (error) {
             return { response: { message: 'Erro interno do servidor' }, httpCode: 500 }
@@ -423,7 +425,6 @@ const AutoSenderService = {
         const { start, end } = timeRange;
         let startTime = parseInt(start.replace(/\D/g, ""));
         let endTime = parseInt(end.replace(/\D/g, ""));
-
         return currentTime >= startTime && currentTime < endTime;
     },
 

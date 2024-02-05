@@ -133,7 +133,8 @@ const AutoSenderService = {
             instance.active = true;
             const autosenderRepository = data_source_1.default.getRepository(Autosender_1.default);
             await autosenderRepository.update({ instance: { id: instanceId } }, { active: true });
-            return await AutoSenderService.turnOnSend(instanceId);
+            await AutoSenderService.turnOnSend(instanceId);
+            return { response: { message: 'Serviço Iniciado' }, httpCode: 200 };
         }
         catch (error) {
             return { response: { message: 'Erro interno do servidor' }, httpCode: 500 };

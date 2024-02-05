@@ -30,8 +30,20 @@ const WhatsAppManager = {
     },
     async close(instanceId) {
         return await WhatsAppManager.verifyInstance(instanceId, async (instance) => {
+            console.log("miroslav");
             const wppClient = instance === null || instance === void 0 ? void 0 : instance.wppClient;
-            wppClient.destroy();
+            const destroyResponse = await wppClient.destroy();
+            if (destroyResponse === true) {
+                wppManagerInstances.delete(instanceId);
+                return { response: { message: `Sessão ${instanceId} fechada` }, httpCode: 200 };
+            }
+            else {
+                return { response: { message: `Não foi possível fechar instancia ${instanceId}` }, httpCode: 403 };
+            }
+        });
+    },
+    async forceDestroy(instanceId) {
+        return await WhatsAppManager.verifyInstance(instanceId, async () => {
             wppManagerInstances.delete(instanceId);
             return { response: { message: `Sessão ${instanceId} fechada` }, httpCode: 200 };
         });
@@ -49,12 +61,14 @@ const WhatsAppManager = {
             await wppClient.logout();
             await WhatsAppManager.close(instanceId);
             await WhatsAppManager.inicialize(instanceId);
+            console.log("<< COMANDO DE RESET >>");
             return { response: { message: `Sessão ${instanceId} desconectada` }, httpCode: 200 };
         });
     },
     async inicialize(instanceId) {
         const createStatus = WhatsAppManager.create(instanceId);
         if (createStatus === true) {
+            console.log("<< CRIANDO INSTANCIA >>");
             const instance = wppManagerInstances.get(instanceId);
             const instanceRepository = data_source_1.default.getRepository(Instance_1.default);
             const selectedInstance = await instanceRepository.findOne({
@@ -92,6 +106,17 @@ const WhatsAppManager = {
                     });
                 }
             });
+            setTimeout(async () => {
+                const instanceConnection = await WhatsAppManager.connectionStatus(instanceId);
+                const status = instanceConnection.response.status;
+                console.log("realizando validação:");
+                if (status === 'LOADING') {
+                    console.log("REINICIANDO");
+                    await WhatsAppManager.restart(instanceId);
+                    await WhatsAppManager.inicialize(instanceId);
+                }
+                console.log(instanceConnection);
+            }, 40000);
             wppClient.initialize();
             return { response: { message: `Instancia ${instanceId} iniciada` }, httpCode: 200 };
         }
