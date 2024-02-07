@@ -169,6 +169,7 @@ const InstanceController = {
                 });
                 if (!!selectedBatch === true) {
                     const batchResponse = await AutoSenderService_1.default.deleteBatch(parsedId);
+                    AutoSenderService_1.default.resetCacheBatchSended(instance.id);
                     return response.status(batchResponse.httpCode).json(batchResponse.response);
                 }
                 else {
@@ -196,16 +197,43 @@ const InstanceController = {
                 }
             });
             if (selectedBatch.length > 0) {
+                let batchesHistory = [];
                 for (const batch of selectedBatch) {
-                    await AutoSenderService_1.default.deleteBatch(batch.id);
+                    let sendedMessages = [];
+                    const responseDelete = await AutoSenderService_1.default.deleteBatch(batch.id);
+                    if (responseDelete.httpCode === 200) {
+                        const sendedMessageList = await AutoSenderService_1.default.listSendedMessagesBatch(batch.id);
+                        if (!!sendedMessageList === true) {
+                            sendedMessages = sendedMessageList;
+                        }
+                    }
+                    batchesHistory.push({ batchId: batch.id, sendedMessages: sendedMessages });
                 }
-                return response.status(200).json({ message: 'Lotes pendentes de envio deletados' });
+                AutoSenderService_1.default.resetCacheBatchSended(instance.id);
+                return response.status(200).json({ message: 'Lotes pendentes de envio deletados', history: batchesHistory });
             }
             else {
                 return response.status(403).json({ message: 'Não há lotes pendentes de envio' });
             }
         }
         catch (error) {
+            return response.status(500).json({ message: 'Erro interno do servidor' });
+        }
+    },
+    async batchSendedMessages(request, response) {
+        try {
+            let { id } = request.params;
+            const parsedId = parseInt(id);
+            const listResponse = await AutoSenderService_1.default.listSendedMessagesBatch(parsedId);
+            if (!!listResponse == true) {
+                return response.status(200).json(listResponse);
+            }
+            else {
+                return response.status(403).json({ message: 'Não há mensagens enviadas a este lote' });
+            }
+        }
+        catch (error) {
+            console.log(error);
             return response.status(500).json({ message: 'Erro interno do servidor' });
         }
     },
@@ -226,6 +254,7 @@ const InstanceController = {
             });
             if (!!selectedBatch === true) {
                 await AutoSenderService_1.default.deleteBatch(selectedBatch.id);
+                AutoSenderService_1.default.resetCacheBatchSended(instance.id);
                 return response.status(200).json({ message: 'Ultimo lote pendente de envio deletado' });
             }
             else {
@@ -250,8 +279,6 @@ const InstanceController = {
         catch (error) {
             return response.status(500).json({ message: 'Erro interno do servidor' });
         }
-    },
-    hooks(request, response) {
     },
     async pauseAutosender(request, response) {
         try {

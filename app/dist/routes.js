@@ -21,6 +21,7 @@ routes.get('/instance/:name/pendingBatches', authMiddleware_1.authenticateToken,
 routes.get('/instance/:name/autosender', authMiddleware_1.authenticateToken, instanceMiddleware_1.getInstanceMiddleware, InstanceController_1.default.autoSenderStatus);
 routes.get('/instance/:name/disable', authMiddleware_1.authenticateToken, InstanceController_1.default.disable);
 routes.get('/instance/:name/enable', authMiddleware_1.authenticateToken, InstanceController_1.default.enable);
+routes.get('/instance/:name/batchSendedMessages/:id', authMiddleware_1.authenticateToken, instanceMiddleware_1.getInstanceMiddleware, InstanceController_1.default.batchSendedMessages);
 routes.post('/instance/:name/send', authMiddleware_1.authenticateToken, instanceMiddleware_1.getInstanceMiddleware, InstanceController_1.default.sendMessage);
 routes.post('/instance/:name/addBatch', authMiddleware_1.authenticateToken, instanceMiddleware_1.getInstanceMiddleware, InstanceController_1.default.addBatch);
 routes.post('/instance/:name/deleteLastBatch', authMiddleware_1.authenticateToken, instanceMiddleware_1.getInstanceMiddleware, InstanceController_1.default.deleteLastBatch);

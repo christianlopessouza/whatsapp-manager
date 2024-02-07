@@ -90,7 +90,8 @@ const AutoSenderService = {
                         max: autosenderClient.shooting_max
                     },
                     active: autosenderClient.active,
-                    days: autosenderClient.days.split(',').map(Number)
+                    days: autosenderClient.days.split(',').map(Number),
+                    stopRun: false,
                 };
             }
             autosenderIntances.set(instanceId, dataParams);
@@ -168,7 +169,10 @@ const AutoSenderService = {
                         },
                         relations: ['batch'],
                         select: ['id', 'message', 'number', 'batch.id'], // Correção aqui
-                        take: 100
+                        take: 100,
+                        order: {
+                            id: 'ASC' // Ordena por id de forma decrescente para obter o lote mais recente
+                        }
                     });
                     AutoSenderService.sendBatchMessages(instanceId, pendingMessages);
                     return { response: { message: 'Serviço iniciado' }, httpCode: 200 };
@@ -236,10 +240,13 @@ const AutoSenderService = {
                 },
                 relations: ['instance', 'instance.client']
             });
+            const sendedMessages = await AutoSenderService.listSendedMessagesBatch(batchId);
             const client = selectedBatch.instance.client;
+            console.log(sendedMessages);
             if (!!client.hook_url === true) {
                 (0, WebHook_1.WebHook)(client.hook_url, {
                     batchId: batchId,
+                    sendedMessages: sendedMessages,
                     status: 'success',
                     method: 'batchSent'
                 });
@@ -250,6 +257,7 @@ const AutoSenderService = {
     async addBatch(instanceId, messages) {
         try {
             const batchRepository = data_source_1.default.getRepository(Batch_1.default);
+            const message_id_list = [];
             const newBatch = batchRepository.create({
                 time: new Date(),
                 sent: false,
@@ -268,10 +276,14 @@ const AutoSenderService = {
                         id: batchId
                     },
                 });
-                await messageBatchRepository.save(newMessageBatch);
+                const savedMessage = await messageBatchRepository.save(newMessageBatch);
+                message_id_list.push({
+                    inserted_id: savedMessage.id,
+                    reference: message.id
+                });
             }
             AutoSenderService.turnOnSend(instanceId);
-            return { response: { message: 'Lote enviado' }, httpCode: 200 };
+            return { response: { message: 'Lote enviado', messages_id: message_id_list, batchId: batchId }, httpCode: 200 };
         }
         catch (error) {
             return { response: { message: 'Erro interno do servidor' }, httpCode: 500 };
@@ -288,13 +300,22 @@ const AutoSenderService = {
             const batchRepository = data_source_1.default.getRepository(Batch_1.default);
             await batchRepository.update({
                 id: batchId,
-            }, { sent: true });
+            }, { sent: true, deleted: true });
             return { response: { message: 'Lote deletado' }, httpCode: 200 };
         }
         else {
             return { response: { message: 'Lote não existente' }, httpCode: 403 };
         }
     },
+    // async deletePendingBatches(instanceId: number) {
+    //     const batches = await AutoSenderService.listPendingBatches(instanceId);
+    //     const batches_id_list = [];
+    //     for (const batch of batches) {
+    //         await AutoSenderService.deleteBatch(batch.id);
+    //         batches_id_list.push(batch.id);
+    //     }
+    //     return { response: { message: 'Mensagens deletadas', deletedBatches: batches_id_list }, httpCode: 200 }
+    // },
     async status(instanceId) {
         await AutoSenderService.create(instanceId);
         try {
@@ -302,6 +323,55 @@ const AutoSenderService = {
             return !!instance.active; // Retorna o status atual do serviço de envio automático
         }
         catch (error) {
+            return false;
+        }
+    },
+    async listPendingBatches(instanceId) {
+        const batchRepository = data_source_1.default.getRepository(Batch_1.default);
+        const pendingBatches = await batchRepository.find({
+            where: {
+                instance: {
+                    id: instanceId
+                }
+            },
+            select: ['id'],
+        });
+        return pendingBatches;
+    },
+    resetCacheBatchSended(instanceId) {
+        try {
+            const instance = autosenderIntances.get(instanceId);
+            instance.stopRun = true;
+            return true;
+        }
+        catch (error) {
+            console.log(error);
+            return false;
+        }
+    },
+    async listSendedMessagesBatch(batchId) {
+        const messageBatchRepository = data_source_1.default.getRepository(BatchHistory_1.default);
+        const messagesBatch = await messageBatchRepository.find({
+            where: {
+                batch: {
+                    id: batchId
+                },
+                message: {
+                    sent: true
+                }
+            },
+            relations: ['message'], // Certifique-se de incluir os nomes corretos das relações
+            select: {
+                message: {
+                    id: true,
+                    insert_timestamp: true
+                }
+            },
+        });
+        if (messagesBatch.length > 0) {
+            return messagesBatch;
+        }
+        else {
             return false;
         }
     },

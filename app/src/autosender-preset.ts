@@ -12,7 +12,8 @@ interface AutosendInstance {
     time: TimeRange,
     shootingTimer: ShootingTimer,
     active: boolean,
-    days: number[]
+    days: number[],
+    stopRun: boolean
 }
 
 interface AutosendInstanceUpdate {
@@ -32,7 +33,8 @@ const defaultConfigAutosend: AutosendInstance = {
         max: 30
     },
     active: true,
-    days: [0, 1, 2, 3, 4, 5, 6]
+    days: [0, 1, 2, 3, 4, 5, 6],
+    stopRun: false
 }
 
 

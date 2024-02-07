@@ -5,6 +5,7 @@ import WhatsAppManager from '../services/WhatsAppManager';
 import AutoSenderService from '../services/AutoSenderService';
 import InstanceService from '../services/InstanceService';
 import { ExtendedRequest, MessageBatchArray } from '../services/MainServices';
+import { AutosendInstance } from '../autosender-preset';
 import { parse } from 'dotenv';
 import Batch from '../models/Batch';
 
@@ -207,6 +208,8 @@ const InstanceController = {
 
                 if (!!selectedBatch === true) {
                     const batchResponse = await AutoSenderService.deleteBatch(parsedId);
+                    AutoSenderService.resetCacheBatchSended(instance.id);
+
                     return response.status(batchResponse.httpCode).json(batchResponse.response);
                 } else {
                     return response.status(403).json({ message: 'Lote inválido' });
@@ -251,6 +254,8 @@ const InstanceController = {
                     }
                     batchesHistory.push({ batchId: batch.id, sendedMessages: sendedMessages });
                 }
+                AutoSenderService.resetCacheBatchSended(instance.id);
+
                 return response.status(200).json({ message: 'Lotes pendentes de envio deletados', history: batchesHistory });
             } else {
                 return response.status(403).json({ message: 'Não há lotes pendentes de envio' });
@@ -301,6 +306,7 @@ const InstanceController = {
 
             if (!!selectedBatch === true) {
                 await AutoSenderService.deleteBatch(selectedBatch.id);
+                AutoSenderService.resetCacheBatchSended(instance.id);
                 return response.status(200).json({ message: 'Ultimo lote pendente de envio deletado' });
             } else {
                 return response.status(403).json({ message: 'Não há lotes pendentes de envio' });

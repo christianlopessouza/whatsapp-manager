@@ -109,7 +109,8 @@ const AutoSenderService = {
                         max: autosenderClient.shooting_max
                     },
                     active: autosenderClient.active,
-                    days: autosenderClient.days.split(',').map(Number)
+                    days: autosenderClient.days.split(',').map(Number),
+                    stopRun: false,
                 }
             }
 
@@ -211,7 +212,10 @@ const AutoSenderService = {
                         },
                         relations: ['batch'],
                         select: ['id', 'message', 'number', 'batch.id' as keyof MessageBatch], // Correção aqui
-                        take: 100
+                        take: 100,
+                        order: {
+                            id: 'ASC' // Ordena por id de forma decrescente para obter o lote mais recente
+                        }
                     });
 
                     AutoSenderService.sendBatchMessages(instanceId, pendingMessages);
@@ -297,9 +301,11 @@ const AutoSenderService = {
                 relations: ['instance', 'instance.client']
             });
 
-            const sendedMessages = AutoSenderService.listSendedMessagesBatch(batchId);
+            const sendedMessages = await AutoSenderService.listSendedMessagesBatch(batchId);
 
             const client = selectedBatch!.instance.client;
+
+            console.log(sendedMessages);
             if (!!client.hook_url === true) {
                 WebHook(client.hook_url, {
                     batchId: batchId,
@@ -422,9 +428,19 @@ const AutoSenderService = {
         return pendingBatches;
     },
 
+    resetCacheBatchSended(instanceId: number) {
+        try {
+            const instance = autosenderIntances.get(instanceId);
+            instance!.stopRun = true;
+            return true;
+        } catch (error) {
+            console.log(error)
+            return false;
+        }
+    },
+
     async listSendedMessagesBatch(batchId: number) {
         const messageBatchRepository = dataSource.getRepository(BatchHistory);
-        console.log(batchId, "costuimo")
         const messagesBatch = await messageBatchRepository.find({
             where: {
                 batch: {
@@ -434,8 +450,15 @@ const AutoSenderService = {
                     sent: true
                 }
             },
-            select: ['message.id' as keyof BatchHistory, 'message.message' as keyof BatchHistory, 'message.number' as keyof BatchHistory, 'message.insert_timestamp' as keyof BatchHistory],
+            relations: ['message'], // Certifique-se de incluir os nomes corretos das relações
+            select: {
+                message: {
+                    id: true,
+                    insert_timestamp: true
+                }
+            },
         });
+
 
         if (messagesBatch.length > 0) {
             return messagesBatch
