@@ -21,6 +21,9 @@ routes.get('/instance/:name/autosender', authenticateToken, getInstanceMiddlewar
 routes.get('/instance/:name/disable', authenticateToken, InstanceController.disable)
 routes.get('/instance/:name/enable', authenticateToken, InstanceController.enable)
 
+routes.get('/instance/:name/batchSendedMessages/:id', authenticateToken,getInstanceMiddleware, InstanceController.batchSendedMessages);
+
+
 routes.post('/instance/:name/send', authenticateToken, getInstanceMiddleware, InstanceController.sendMessage)
 routes.post('/instance/:name/addBatch', authenticateToken, getInstanceMiddleware, InstanceController.addBatch)
 routes.post('/instance/:name/deleteLastBatch', authenticateToken, getInstanceMiddleware, InstanceController.deleteLastBatch)

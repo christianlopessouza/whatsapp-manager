@@ -3,6 +3,8 @@ import dataSource from '../data-source';
 import Client from '../models/Client';
 import Instance from '../models/Instance';
 import WhatsAppManager from '../services/WhatsAppManager';
+import { delay } from '../services/MainServices';
+
 
 
 const InstanceService = {
@@ -52,10 +54,9 @@ const InstanceService = {
     });
 
     for (const instance of selectedInstance) {
-      WhatsAppManager.inicialize(instance.id);
+      await WhatsAppManager.inicialize(instance.id);
+      await delay(10);
     }
-
-
   }
 
 

@@ -9,6 +9,7 @@ import BatchHistory from '../models/BatchHistory';
 import Batch from '../models/Batch';
 import { WebHook } from './WebHook';
 import { delay, DefaultResponse } from '../services/MainServices';
+import Message from '../models/Message';
 
 
 const autosenderIntances: Map<number, AutosendInstance> = new Map();
@@ -296,10 +297,13 @@ const AutoSenderService = {
                 relations: ['instance', 'instance.client']
             });
 
+            const sendedMessages = AutoSenderService.listSendedMessagesBatch(batchId);
+
             const client = selectedBatch!.instance.client;
             if (!!client.hook_url === true) {
                 WebHook(client.hook_url, {
                     batchId: batchId,
+                    sendedMessages: sendedMessages,
                     status: 'success',
                     method: 'batchSent'
                 });
@@ -308,9 +312,10 @@ const AutoSenderService = {
         }
     },
 
-    async addBatch(instanceId: number, messages: { number: string, message: string }[]) {
+    async addBatch(instanceId: number, messages: { number: string, message: string, id?: number }[]) {
         try {
             const batchRepository = dataSource.getRepository(Batch)
+            const message_id_list: { inserted_id: number, reference: number | undefined }[] = [];
 
             const newBatch = batchRepository.create({
                 time: new Date(),
@@ -333,12 +338,19 @@ const AutoSenderService = {
                         id: batchId
                     },
                 });
-                await messageBatchRepository.save(newMessageBatch);
+
+                const savedMessage = await messageBatchRepository.save(newMessageBatch);
+
+                message_id_list.push({
+                    inserted_id: savedMessage.id,
+                    reference: message.id
+                });
+
             }
 
             AutoSenderService.turnOnSend(instanceId);
 
-            return { response: { message: 'Lote enviado' }, httpCode: 200 }
+            return { response: { message: 'Lote enviado', messages_id: message_id_list, batchId: batchId }, httpCode: 200 }
 
         } catch (error) {
             return { response: { message: 'Erro interno do servidor' }, httpCode: 500 }
@@ -361,14 +373,27 @@ const AutoSenderService = {
 
             await batchRepository.update({
                 id: batchId,
-            }, { sent: true });
+            }, { sent: true, deleted: true });
 
             return { response: { message: 'Lote deletado' }, httpCode: 200 }
         } else {
             return { response: { message: 'Lote não existente' }, httpCode: 403 }
         }
-
     },
+
+
+    // async deletePendingBatches(instanceId: number) {
+    //     const batches = await AutoSenderService.listPendingBatches(instanceId);
+
+    //     const batches_id_list = [];
+
+    //     for (const batch of batches) {
+    //         await AutoSenderService.deleteBatch(batch.id);
+    //         batches_id_list.push(batch.id);
+    //     }
+
+    //     return { response: { message: 'Mensagens deletadas', deletedBatches: batches_id_list }, httpCode: 200 }
+    // },
 
     async status(instanceId: number) {
         await AutoSenderService.create(instanceId);
@@ -377,6 +402,44 @@ const AutoSenderService = {
             return !!instance!.active; // Retorna o status atual do serviço de envio automático
 
         } catch (error) {
+            return false;
+        }
+
+    },
+
+    async listPendingBatches(instanceId: number) {
+        const batchRepository = dataSource.getRepository(Batch);
+
+        const pendingBatches = await batchRepository.find({
+            where: {
+                instance: {
+                    id: instanceId
+                }
+            },
+            select: ['id'],
+        });
+
+        return pendingBatches;
+    },
+
+    async listSendedMessagesBatch(batchId: number) {
+        const messageBatchRepository = dataSource.getRepository(BatchHistory);
+        console.log(batchId, "costuimo")
+        const messagesBatch = await messageBatchRepository.find({
+            where: {
+                batch: {
+                    id: batchId
+                },
+                message: {
+                    sent: true
+                }
+            },
+            select: ['message.id' as keyof BatchHistory, 'message.message' as keyof BatchHistory, 'message.number' as keyof BatchHistory, 'message.insert_timestamp' as keyof BatchHistory],
+        });
+
+        if (messagesBatch.length > 0) {
+            return messagesBatch
+        } else {
             return false;
         }
 
@@ -419,6 +482,9 @@ const AutoSenderService = {
             return false;
         }
     },
+
+
+
 
 
     isWithinTimeRange(currentTime: number, timeRange: TimeRange): boolean {

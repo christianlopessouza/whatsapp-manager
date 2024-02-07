@@ -75,7 +75,7 @@ const InstanceController = {
 
         }
     },
-    
+
     async close(request: ExtendedRequest, response: Response) {
         try {
             const instance = request.instance!;
@@ -238,15 +238,44 @@ const InstanceController = {
             });
 
             if (selectedBatch.length > 0) {
+                let batchesHistory: { batchId: number, sendedMessages: any }[] = [];
+
                 for (const batch of selectedBatch) {
-                    await AutoSenderService.deleteBatch(batch.id);
+                    let sendedMessages: any = [];
+                    const responseDelete = await AutoSenderService.deleteBatch(batch.id);
+                    if (responseDelete.httpCode === 200) {
+                        const sendedMessageList = await AutoSenderService.listSendedMessagesBatch(batch.id);
+                        if (!!sendedMessageList === true) {
+                            sendedMessages = sendedMessageList;
+                        }
+                    }
+                    batchesHistory.push({ batchId: batch.id, sendedMessages: sendedMessages });
                 }
-                return response.status(200).json({ message: 'Lotes pendentes de envio deletados' });
+                return response.status(200).json({ message: 'Lotes pendentes de envio deletados', history: batchesHistory });
             } else {
                 return response.status(403).json({ message: 'Não há lotes pendentes de envio' });
             }
 
         } catch (error) {
+            return response.status(500).json({ message: 'Erro interno do servidor' });
+
+        }
+    },
+
+    async batchSendedMessages(request: ExtendedRequest, response: Response) {
+        try {
+            let { id } = request.params;
+            const parsedId: number = parseInt(id);
+
+            const listResponse = await AutoSenderService.listSendedMessagesBatch(parsedId);
+            if (!!listResponse == true) {
+                return response.status(200).json(listResponse)
+            } else {
+                return response.status(403).json({ message: 'Não há mensagens enviadas a este lote' })
+            }
+
+        } catch (error) {
+            console.log(error)
             return response.status(500).json({ message: 'Erro interno do servidor' });
 
         }
@@ -300,11 +329,6 @@ const InstanceController = {
         }
     },
 
-    hooks(request: ExtendedRequest, response: Response) {
-
-    },
-
-
     async pauseAutosender(request: ExtendedRequest, response: Response) {
         try {
             const instance = request.instance!;
@@ -355,8 +379,11 @@ const InstanceController = {
             if (selectedInstance === null) {
                 return response.status(403).json({ message: 'Instancia não existente' });
             } else {
+                await WhatsAppManager.inicialize(selectedInstance.id);
                 await instanceRepository.update({ id: selectedInstance.id }, { enabled: true });
-                return response.status(403).json({ message: 'Instancia ativada' });
+                selectedInstance.enabled = true;
+
+                return response.status(200).json({ message: 'Instancia ativada' });
             }
         } catch (error) {
             return response.status(500).json({ message: 'Erro interno do servidor' });
@@ -386,10 +413,10 @@ const InstanceController = {
                 return response.status(403).json({ message: 'Instancia não existente' });
             } else {
                 await WhatsAppManager.close(selectedInstance.id);
-                await AutoSenderService.stop(selectedInstance.id);
+                selectedInstance.enabled = false;
 
                 await instanceRepository.update({ id: selectedInstance.id }, { enabled: false });
-                return response.status(403).json({ message: 'Instancia desativada' });
+                return response.status(200).json({ message: 'Instancia desativada' });
             }
         } catch (error) {
             return response.status(500).json({ message: 'Erro interno do servidor' });

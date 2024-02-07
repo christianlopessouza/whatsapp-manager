@@ -295,8 +295,10 @@ const InstanceController = {
                 return response.status(403).json({ message: 'Instancia não existente' });
             }
             else {
+                await WhatsAppManager_1.default.inicialize(selectedInstance.id);
                 await instanceRepository.update({ id: selectedInstance.id }, { enabled: true });
-                return response.status(403).json({ message: 'Instancia ativada' });
+                selectedInstance.enabled = true;
+                return response.status(200).json({ message: 'Instancia ativada' });
             }
         }
         catch (error) {
@@ -322,9 +324,9 @@ const InstanceController = {
             }
             else {
                 await WhatsAppManager_1.default.close(selectedInstance.id);
-                await AutoSenderService_1.default.stop(selectedInstance.id);
+                selectedInstance.enabled = false;
                 await instanceRepository.update({ id: selectedInstance.id }, { enabled: false });
-                return response.status(403).json({ message: 'Instancia desativada' });
+                return response.status(200).json({ message: 'Instancia desativada' });
             }
         }
         catch (error) {

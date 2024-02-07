@@ -6,6 +6,7 @@ import InstanceService from './services/InstanceService';
 import dataSource from './data-source';
 import { PORT, GATEWAY } from './config';
 
+
 (async () => {
     await dataSource.initialize();
 

@@ -133,17 +133,16 @@ const WhatsAppManager = {
                 }
             });
 
-            setTimeout(async () => {
-                const instanceConnection = await WhatsAppManager.connectionStatus(instanceId);
-                const status = instanceConnection.response.status;
-                console.log("realizando validação:");
-                if (status === 'LOADING') {
-                    console.log("REINICIANDO");
-                    await WhatsAppManager.restart(instanceId);
-                    await WhatsAppManager.inicialize(instanceId);
-                }
-                console.log(instanceConnection);
-            }, 4000);
+            // setTimeout(async () => {
+            //     const instanceConnection = await WhatsAppManager.connectionStatus(instanceId);
+            //     const status = instanceConnection.response.status;
+            //     console.log("realizando validação:");
+            //     if (status === 'LOADING' || status === 'ERROR') {
+            //         await WhatsAppManager.restart(instanceId);
+            //         await WhatsAppManager.inicialize(instanceId);
+            //     }
+            //     console.log(instanceConnection);
+            // }, 40000);
 
             wppClient.initialize();
 
@@ -165,22 +164,27 @@ const WhatsAppManager = {
     },
 
     async connectionStatus(instanceId: number): Promise<DefaultResponse> {
-        const instance = wppManagerInstances.get(instanceId);
+        try {
+            const instance = wppManagerInstances.get(instanceId);
 
-        if (!!instance === false) {
-            return { response: { status: 'OFF' }, httpCode: 200 };
-        } else if (!!instance.qrCode === true) {
-            return { response: { status: 'QRCODE_SCANN' }, httpCode: 200 };
-        } else {
-            const wppClient = instance?.wppClient;
-
-            let status: any = await wppClient.getState();
-
-            if (!!status === true) {
-                return { response: { status: status }, httpCode: 200 };
+            if (!!instance === false) {
+                return { response: { status: 'OFF' }, httpCode: 200 };
+            } else if (!!instance.qrCode === true) {
+                return { response: { status: 'QRCODE_SCANN' }, httpCode: 200 };
             } else {
-                return { response: { status: "LOADING" }, httpCode: 200 };
+                const wppClient = instance?.wppClient;
+
+                let status: any = await wppClient.getState();
+
+                if (!!status === true) {
+                    return { response: { status: status }, httpCode: 200 };
+                } else {
+                    return { response: { status: "LOADING" }, httpCode: 200 };
+                }
             }
+        } catch (error) {
+            console.log(error)
+            return { response: { status: "ERROR" }, httpCode: 403 };
         }
     },
 

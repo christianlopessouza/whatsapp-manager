@@ -7,6 +7,7 @@ const AutoSenderService_1 = __importDefault(require("./AutoSenderService"));
 const data_source_1 = __importDefault(require("../data-source"));
 const Instance_1 = __importDefault(require("../models/Instance"));
 const WhatsAppManager_1 = __importDefault(require("../services/WhatsAppManager"));
+const MainServices_1 = require("../services/MainServices");
 const InstanceService = {
     initTrigger(instanceId) {
         AutoSenderService_1.default.turnOnSend(instanceId); // caso tenha o envio de mensagem automativo é iniciado
@@ -45,7 +46,8 @@ const InstanceService = {
             select: ['id'],
         });
         for (const instance of selectedInstance) {
-            WhatsAppManager_1.default.inicialize(instance.id);
+            await WhatsAppManager_1.default.inicialize(instance.id);
+            await (0, MainServices_1.delay)(10);
         }
     }
 };
