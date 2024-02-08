@@ -4,6 +4,7 @@ import Client from '../models/Client';
 import Instance from '../models/Instance';
 import WhatsAppManager from '../services/WhatsAppManager';
 import { delay } from '../services/MainServices';
+import { localDate } from '../services/MainServices';
 
 
 
@@ -31,7 +32,7 @@ const InstanceService = {
       const newInstance = instanceRepository.create({
         name: name,
         client: { id: clientId },
-        insert_timestamp: new Date(),
+        insert_timestamp: localDate().toString(),
         enabled: true,
       });
 

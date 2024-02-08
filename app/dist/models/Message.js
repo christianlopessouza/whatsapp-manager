@@ -34,6 +34,10 @@ __decorate([
     __metadata("design:type", Boolean)
 ], Message.prototype, "sent", void 0);
 __decorate([
+    (0, typeorm_1.Column)(),
+    __metadata("design:type", Number)
+], Message.prototype, "message_batch_id", void 0);
+__decorate([
     (0, typeorm_1.Column)({ type: 'datetime' }),
     __metadata("design:type", Date)
 ], Message.prototype, "insert_timestamp", void 0);

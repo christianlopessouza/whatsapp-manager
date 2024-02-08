@@ -2,6 +2,7 @@
 import dataSource from '../data-source';
 import Autosender from '../models/Autosender';
 import MessageBatch from '../models/MessageBatch';
+import Message from '../models/Message';
 import { AutosendInstance, defaultConfigAutosend, TimeRange, AutosendInstanceUpdate } from '../autosender-preset';
 import { checkAutosendMiddleware } from '../middlewares/autosendMiddleware';
 import WhatsAppManager from './WhatsAppManager';
@@ -9,7 +10,9 @@ import BatchHistory from '../models/BatchHistory';
 import Batch from '../models/Batch';
 import { WebHook } from './WebHook';
 import { delay, DefaultResponse } from '../services/MainServices';
-import Message from '../models/Message';
+import { localDate } from '../services/MainServices';
+import { DateTime } from 'luxon';
+
 
 
 const autosenderIntances: Map<number, AutosendInstance> = new Map();
@@ -29,7 +32,7 @@ const AutoSenderService = {
 
                 const autosenderRepository = dataSource.getRepository(Autosender);
 
-                const response = await autosenderRepository.update({ instance: { id: instanceId } }, {
+                await autosenderRepository.update({ instance: { id: instanceId } }, {
                     shooting_min: dataParams.shootingTimer.min,
                     shooting_max: dataParams.shootingTimer.max,
                     timer_start: dataParams.time.start,
@@ -38,16 +41,16 @@ const AutoSenderService = {
                     days: dataParams.days.join(',')
                 });
 
-                console.log(response)
-                console.log(dataParams)
-                console.log({ id: instanceId }, {
-                    shooting_min: dataParams.shootingTimer.min,
-                    shooting_max: dataParams.shootingTimer.max,
-                    timer_start: dataParams.time.start,
-                    timer_end: dataParams.time.end,
-                    active: dataParams.active,
-                    days: dataParams.days.join(',')
-                })
+                // console.log(response)
+                // console.log(dataParams)
+                // console.log({ id: instanceId }, {
+                //     shooting_min: dataParams.shootingTimer.min,
+                //     shooting_max: dataParams.shootingTimer.max,
+                //     timer_start: dataParams.time.start,
+                //     timer_end: dataParams.time.end,
+                //     active: dataParams.active,
+                //     days: dataParams.days.join(',')
+                // })
 
 
                 return true;
@@ -125,11 +128,11 @@ const AutoSenderService = {
             autosenderIntances.forEach((instance: AutosendInstance, id) => {
                 if (instance.active === false) {
 
-                    const now: Date = new Date();
-                    const currentTime: number = now.getHours() * 100 + now.getMinutes();;
+                    const now: DateTime = localDate();
+                    const currentTime: number = now.hour * 100 + now.minute;
                     const validTime: boolean = AutoSenderService.isWithinTimeRange(currentTime, instance.time);
 
-                    const currentDay: number = now.getDay();
+                    const currentDay: number = now.day;
                     const validDay: boolean = AutoSenderService.isCurrentDayValid(currentDay, instance.days);
 
                     if (validTime && validDay) {
@@ -245,6 +248,10 @@ const AutoSenderService = {
                     await delay(delayInSeconds);
 
                     const statusMessage = await WhatsAppManager.sendMessage(instanceId, message.message, message.number);
+                    if (!!statusMessage.response.messageId === true) {
+                        const messageRepository = dataSource.getRepository(Message);
+                        await messageRepository.update({ id: statusMessage.response.messageId }, { message_batch_id: message.id });
+                    }
 
                     const messageBatchRepository = dataSource.getRepository(MessageBatch);
                     await messageBatchRepository.remove(message);
@@ -259,9 +266,8 @@ const AutoSenderService = {
                             id: message.batch.id
                         }
                     });
+
                     await batchHistoryRepository.save(newMessageHistory);
-
-
 
                     return { response: { message: 'Mensagem enviada' }, httpCode: 200 }
                 } catch (error) {
@@ -305,7 +311,7 @@ const AutoSenderService = {
 
             const client = selectedBatch!.instance.client;
 
-            console.log(sendedMessages);
+            console.log(sendedMessages,"THIS LOTE");
             if (!!client.hook_url === true) {
                 WebHook(client.hook_url, {
                     batchId: batchId,
@@ -324,7 +330,7 @@ const AutoSenderService = {
             const message_id_list: { inserted_id: number, reference: number | undefined }[] = [];
 
             const newBatch = batchRepository.create({
-                time: new Date(),
+                time: localDate().toString(),
                 sent: false,
                 instance: {
                     id: instanceId,
@@ -445,23 +451,30 @@ const AutoSenderService = {
             where: {
                 batch: {
                     id: batchId
-                },
-                message: {
-                    sent: true
                 }
             },
             relations: ['message'], // Certifique-se de incluir os nomes corretos das relações
             select: {
                 message: {
                     id: true,
-                    insert_timestamp: true
+                    insert_timestamp: true,
+                    sent: true,
+                    message_batch_id: true
                 }
             },
         });
 
+        const messagesBatchFixed = messagesBatch.map(item => ({
+            ...item,
+            message: {
+              ...item.message,
+              insert_timestamp: DateTime.fromJSDate(item.message.insert_timestamp).toLocal().toString(),
+            },
+          }));
 
-        if (messagesBatch.length > 0) {
-            return messagesBatch
+
+        if (messagesBatchFixed.length > 0) {
+            return messagesBatchFixed
         } else {
             return false;
         }

@@ -16,6 +16,9 @@ export default class Message {
     @Column()
     sent: boolean;
 
+    @Column()
+    message_batch_id: number;
+
     @Column({ type: 'datetime' })
     insert_timestamp: Date;
 

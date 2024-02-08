@@ -6,6 +6,7 @@ import Instance from '../models/Instance';
 import InstanceService from './InstanceService';
 import { DefaultResponse } from '../services/MainServices';
 import { WebHook } from './WebHook';
+import { localDate } from '../services/MainServices';
 
 
 const wppManagerInstances: Map<number, WhatsAppInstance> = new Map();
@@ -36,12 +37,11 @@ const WhatsAppManager = {
 
     async close(instanceId: number): Promise<DefaultResponse> {
         return await WhatsAppManager.verifyInstance(instanceId, async (instance) => {
-            console.log("miroslav")
             const wppClient = instance?.wppClient;
 
             const destroyResponse = await wppClient.destroy();
 
-            if (destroyResponse === true) {
+            if (destroyResponse! === true) {
                 wppManagerInstances.delete(instanceId);
                 return { response: { message: `Sessão ${instanceId} fechada` }, httpCode: 200 };
             } else {
@@ -203,7 +203,7 @@ const WhatsAppManager = {
                     message: message,
                     number: number,
                     instance: { id: instanceId },
-                    insert_timestamp: new Date(),
+                    insert_timestamp: localDate().toString(),
                     sent: false,
                 }
 
@@ -216,6 +216,7 @@ const WhatsAppManager = {
                         dataParams.sent = true;
                         const newMessage = messageRepository.create(dataParams);
                         const savedMessage = await messageRepository.save(newMessage);
+                        
                         return { response: { message: 'Mensagem enviada', messageId: savedMessage.id, number: number }, httpCode: 200 };
 
                     } catch (error) {

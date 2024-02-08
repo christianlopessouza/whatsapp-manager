@@ -10,6 +10,7 @@ const Message_1 = __importDefault(require("../models/Message"));
 const Instance_1 = __importDefault(require("../models/Instance"));
 const InstanceService_1 = __importDefault(require("./InstanceService"));
 const WebHook_1 = require("./WebHook");
+const MainServices_1 = require("../services/MainServices");
 const wppManagerInstances = new Map();
 const WhatsAppManager = {
     create(instanceId) {
@@ -30,7 +31,6 @@ const WhatsAppManager = {
     },
     async close(instanceId) {
         return await WhatsAppManager.verifyInstance(instanceId, async (instance) => {
-            console.log("miroslav");
             const wppClient = instance === null || instance === void 0 ? void 0 : instance.wppClient;
             const destroyResponse = await wppClient.destroy();
             if (destroyResponse === true) {
@@ -169,7 +169,7 @@ const WhatsAppManager = {
                     message: message,
                     number: number,
                     instance: { id: instanceId },
-                    insert_timestamp: new Date(),
+                    insert_timestamp: (0, MainServices_1.localDate)().toString(),
                     sent: false,
                 };
                 let numberId = (number.length >= 10 && number.length <= 13) ? await wppClient.getNumberId(number) : false;
