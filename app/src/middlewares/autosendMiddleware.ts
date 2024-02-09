@@ -24,6 +24,9 @@ const checkAutosendMiddleware = async (autosendInstance: AutosendInstance, insta
         const wppInstanceConnection = await WhatsAppManager.connectionStatus(instanceId);
         wppSessionActive = wppInstanceConnection.response.status === 'CONNECTED';
 
+        console.log(wppSessionActive,"ESTADO DA SESSÃO");
+        console.log(wppInstanceConnection.response.status);
+
         if (!!autosendInstance.active === false) {
             return { response: { message: 'Serviço Pausado' }, httpCode: 403, errorCode: 'ER010' }
         } else if (!!isTimeValid === false) {
@@ -40,10 +43,10 @@ const checkAutosendMiddleware = async (autosendInstance: AutosendInstance, insta
         } else {
             return action();
         }
+
     } catch (error) {
         return { response: { message: 'Erro interno do servidor' }, httpCode: 500 }
     }
-
 
 };
 

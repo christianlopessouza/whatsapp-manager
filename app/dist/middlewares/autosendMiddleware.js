@@ -17,6 +17,8 @@ const checkAutosendMiddleware = async (autosendInstance, instanceId, action) => 
         let wppSessionActive = false;
         const wppInstanceConnection = await WhatsAppManager_1.default.connectionStatus(instanceId);
         wppSessionActive = wppInstanceConnection.response.status === 'CONNECTED';
+        console.log(wppSessionActive, "ESTADO DA SESSÃO");
+        console.log(wppInstanceConnection.response.status);
         if (!!autosendInstance.active === false) {
             return { response: { message: 'Serviço Pausado' }, httpCode: 403, errorCode: 'ER010' };
         }

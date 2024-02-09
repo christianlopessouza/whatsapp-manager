@@ -61,7 +61,6 @@ const WhatsAppManager = {
             await wppClient.logout();
             await WhatsAppManager.close(instanceId);
             await WhatsAppManager.inicialize(instanceId);
-            console.log("<< COMANDO DE RESET >>");
             return { response: { message: `Sessão ${instanceId} desconectada` }, httpCode: 200 };
         });
     },
@@ -92,12 +91,20 @@ const WhatsAppManager = {
                 });
             });
             wppClient.on('disconnected', async () => {
+                console.log("<< DISCONECTADO >>");
                 await WhatsAppManager.close(instanceId);
                 await WhatsAppManager.inicialize(instanceId);
+                if (!!client.hook_url === true) {
+                    (0, WebHook_1.WebHook)(client.hook_url, {
+                        disconnect: true,
+                        method: 'disconnected'
+                    });
+                }
             });
             wppClient.on('ready', async () => {
                 instance.qrCode = "";
                 InstanceService_1.default.initTrigger(instanceId);
+                console.log("READY!");
                 if (!!client.hook_url === true) {
                     (0, WebHook_1.WebHook)(client.hook_url, {
                         connected: true,
