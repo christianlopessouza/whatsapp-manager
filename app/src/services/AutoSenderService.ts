@@ -272,7 +272,7 @@ const AutoSenderService = {
                     }
 
 
-                    return { response: { message: statusMessage.response }, httpCode: statusMessage.httpCode }
+                    return { response: { message: statusMessage.response }, httpCode: 200 }
                 } catch (error) {
                     return { response: { message: 'Erro interno do seridos' }, httpCode: 500 }
                 }
