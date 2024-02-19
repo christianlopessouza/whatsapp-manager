@@ -16,6 +16,7 @@ const WebHook_1 = require("./WebHook");
 const MainServices_1 = require("../services/MainServices");
 const MainServices_2 = require("../services/MainServices");
 const luxon_1 = require("luxon");
+const timeZone = "America/Sao_Paulo";
 const autosenderIntances = new Map();
 const AutoSenderService = {
     async editProps(instanceId, editedProps) {
@@ -104,12 +105,13 @@ const AutoSenderService = {
         if (autosenderIntances.size > 0) {
             autosenderIntances.forEach((instance, id) => {
                 if (instance.active === false) {
-                    const now = (0, MainServices_2.localDate)();
-                    const currentTime = now.hour * 100 + now.minute;
-                    const validTime = AutoSenderService.isWithinTimeRange(currentTime, instance.time);
-                    const currentDay = now.day;
-                    const validDay = AutoSenderService.isCurrentDayValid(currentDay, instance.days);
-                    if (validTime && validDay) {
+                    const now = new Date(new Date().toLocaleString("en-US", { timeZone }));
+                    const currentTime = now.getHours() * 100 + now.getMinutes();
+                    const currentDay = now.getDay();
+                    const isTimeValid = AutoSenderService.isWithinTimeRange(currentTime, instance.time);
+                    const isDayValid = AutoSenderService.isCurrentDayValid(currentDay, instance.days);
+                    if (isTimeValid && isDayValid) {
+                        AutoSenderService.start(id);
                         AutoSenderService.turnOnSend(id);
                     }
                 }
@@ -201,20 +203,22 @@ const AutoSenderService = {
                     if (!!statusMessage.response.messageId === true) {
                         const messageRepository = data_source_1.default.getRepository(Message_1.default);
                         await messageRepository.update({ id: statusMessage.response.messageId }, { message_batch_id: message.id });
+                        const batchHistoryRepository = data_source_1.default.getRepository(BatchHistory_1.default);
+                        const newMessageHistory = batchHistoryRepository.create({
+                            message: {
+                                id: statusMessage.response.messageId,
+                            },
+                            batch: {
+                                id: message.batch.id
+                            }
+                        });
+                        await batchHistoryRepository.save(newMessageHistory);
                     }
-                    const messageBatchRepository = data_source_1.default.getRepository(MessageBatch_1.default);
-                    await messageBatchRepository.remove(message);
-                    const batchHistoryRepository = data_source_1.default.getRepository(BatchHistory_1.default);
-                    const newMessageHistory = batchHistoryRepository.create({
-                        message: {
-                            id: statusMessage.response.messageId,
-                        },
-                        batch: {
-                            id: message.batch.id
-                        }
-                    });
-                    await batchHistoryRepository.save(newMessageHistory);
-                    return { response: { message: 'Mensagem enviada' }, httpCode: 200 };
+                    if (statusMessage.errorCode != 'ER006') {
+                        const messageBatchRepository = data_source_1.default.getRepository(MessageBatch_1.default);
+                        await messageBatchRepository.remove(message);
+                    }
+                    return { response: { message: statusMessage.response }, httpCode: statusMessage.httpCode };
                 }
                 catch (error) {
                     return { response: { message: 'Erro interno do seridos' }, httpCode: 500 };
@@ -307,6 +311,7 @@ const AutoSenderService = {
             await batchRepository.update({
                 id: batchId,
             }, { sent: true, deleted: true });
+            await AutoSenderService.batchVerifier(batchId);
             return { response: { message: 'Lote deletado' }, httpCode: 200 };
         }
         else {
@@ -419,6 +424,7 @@ const AutoSenderService = {
         const { start, end } = timeRange;
         let startTime = parseInt(start.replace(/\D/g, ""));
         let endTime = parseInt(end.replace(/\D/g, ""));
+        console.log(startTime, endTime, currentTime);
         return currentTime >= startTime && currentTime < endTime;
     },
     isCurrentDayValid(currentDay, validDays) {
